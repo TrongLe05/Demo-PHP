@@ -1,0 +1,23 @@
+[
+    {
+        "name": "12",
+        "email": "1@gmail.com",
+        "rating": 5,
+        "message": "12345",
+        "date": "2026-05-24 09:44"
+    },
+    {
+        "name": "Nguyễn Văn A",
+        "email": "vana@example.com",
+        "rating": 5,
+        "message": "Trang web PHP demo chạy rất mượt mà! Giao diện Glassmorphism trông cực kỳ hiện đại và chuyên nghiệp.",
+        "date": "2026-05-24 08:30"
+    },
+    {
+        "name": "Trần Thị B",
+        "email": "thib@example.com",
+        "rating": 4,
+        "message": "Mã nguồn PHP viết rất sạch sẽ, có xử lý lưu trữ file JSON và kiểm tra dữ liệu đầu vào đầy đủ.",
+        "date": "2026-05-24 09:15"
+    }
+]

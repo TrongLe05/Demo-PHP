@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "fullname": "Quản trị viên",
+    "email": "admin@gmail.com",
+    "password": "123",
+    "role": "admin"
+  },
+  {
+    "id": 2,
+    "fullname": "Nguyễn Văn Khách",
+    "email": "customer@example.com",
+    "password": "$2y$10$dktO2PmjAVu5aRCkIB.DEeJWxPCNTbRq8H0AmA4qnsgYhKTeYVe/K",
+    "role": "user"
+  }
+]
