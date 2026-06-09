@@ -35,6 +35,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description = trim($_POST['description'] ?? '');
         $featured = isset($_POST['featured']) ? 1 : 0;
         
+        // Xử lý upload file ảnh nếu có tệp được chọn tải lên
+        if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
+            $fileTmpPath = $_FILES['image_file']['tmp_name'];
+            $fileName = $_FILES['image_file']['name'];
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            
+            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            if (in_array($fileExtension, $allowedExtensions)) {
+                $uploadDir = __DIR__ . '/uploads/';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+                
+                $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
+                $dest_path = $uploadDir . $newFileName;
+                
+                if (move_uploaded_file($fileTmpPath, $dest_path)) {
+                    $image = 'uploads/' . $newFileName;
+                } else {
+                    $errors['image_file'] = 'Có lỗi xảy ra khi lưu tệp ảnh lên máy chủ.';
+                }
+            } else {
+                $errors['image_file'] = 'Định dạng file không hợp lệ. Chỉ chấp nhận các đuôi: JPG, JPEG, PNG, GIF, WEBP.';
+            }
+        }
+        
         // Validate
         if (empty($title)) $errors['title'] = 'Tên sách không được bỏ trống.';
         if (empty($author)) $errors['author'] = 'Tác giả không được bỏ trống.';
@@ -172,7 +198,7 @@ require_once __DIR__ . '/header.php';
                 <?php echo ($action === 'edit') ? 'Cập nhật thông tin sách (ID: ' . $edit_book['id'] . ')' : 'Thêm sách mới vào cửa hàng'; ?>
             </h4>
             
-            <form action="admin.php?action=<?php echo $action; ?>" method="POST">
+            <form action="admin.php?action=<?php echo $action; ?>" method="POST" enctype="multipart/form-data">
                 <?php if ($action === 'edit'): ?>
                     <input type="hidden" name="id" value="<?php echo $edit_book['id']; ?>">
                 <?php endif; ?>
@@ -217,10 +243,21 @@ require_once __DIR__ . '/header.php';
                 </div>
 
                 <div class="form-group-custom">
-                    <label for="image">Đường dẫn hình ảnh bìa (Ảnh trực tuyến URL)</label>
+                    <label for="image_file">Tải ảnh bìa lên (Tệp từ máy tính)</label>
+                    <input type="file" id="image_file" name="image_file" class="form-control-custom" accept="image/*">
+                    <?php if (isset($errors['image_file'])): ?>
+                        <span class="text-danger fs-7"><?php echo $errors['image_file']; ?></span>
+                    <?php endif; ?>
+                </div>
+
+                <div class="form-group-custom">
+                    <label for="image">Hoặc nhập đường dẫn ảnh trực tuyến (URL)</label>
                     <input type="url" id="image" name="image" class="form-control-custom" 
                            placeholder="https://example.com/image.jpg"
                            value="<?php echo htmlspecialchars($_POST['image'] ?? $edit_book['image'] ?? ''); ?>">
+                    <?php if ($action === 'edit' && !empty($edit_book['image'])): ?>
+                        <small class="text-muted d-block mt-1">Ảnh hiện tại: <code><?php echo htmlspecialchars($edit_book['image']); ?></code></small>
+                    <?php endif; ?>
                 </div>
 
                 <div class="form-group-custom">
