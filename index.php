@@ -17,6 +17,11 @@ if (isset($_GET['add_to_cart'])) {
             $_SESSION['cart'][$book_id] = 1;
         }
         
+        // Đồng bộ giỏ hàng vào CSDL nếu đã đăng nhập
+        if (isset($_SESSION['user_id'])) {
+            sync_session_to_db_cart($_SESSION['user_id']);
+        }
+        
         // Chuyển hướng để tránh lặp hành động F5
         $redirect_url = 'index.php?status=added';
         if (isset($_GET['category'])) {

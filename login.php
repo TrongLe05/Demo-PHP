@@ -19,12 +19,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $user = get_user_by_email($email);
         
-        if ($user && (password_verify($password, $user['password']) || $password === $user['password'])) {
+        if ($user && (password_verify($password, $user['password']) || md5($password) === $user['password'] || $password === $user['password'])) {
             // Đăng nhập thành công, thiết lập session
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['fullname'];
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['user_role'] = $user['role'];
+            
+            // Đồng bộ giỏ hàng từ DB vào Session
+            sync_db_cart_to_session($user['id']);
             
             // Chuyển hướng
             if ($user['role'] === 'admin') {
@@ -91,7 +94,7 @@ require_once __DIR__ . '/header.php';
         <hr style="border-color: var(--glass-border);" class="my-4">
         
         <div class="text-center text-muted">
-            <small>Tài khoản Quản trị mẫu:<br><strong>admin@bookstore.com</strong> / mật khẩu: <strong>admin123</strong></small>
+            <small>Tài khoản Quản trị mẫu:<br><strong>admin@gmail.com</strong> / mật khẩu: <strong>123456</strong></small>
         </div>
     </div>
 </div>

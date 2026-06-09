@@ -14,6 +14,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_cart'])) {
             }
         }
     }
+    // Đồng bộ giỏ hàng vào CSDL nếu đã đăng nhập
+    if (isset($_SESSION['user_id'])) {
+        sync_session_to_db_cart($_SESSION['user_id']);
+    }
     header("Location: cart.php?status=updated");
     exit;
 }
@@ -23,6 +27,10 @@ if (isset($_GET['remove'])) {
     $book_id = (int)$_GET['remove'];
     if (isset($_SESSION['cart'][$book_id])) {
         unset($_SESSION['cart'][$book_id]);
+    }
+    // Đồng bộ giỏ hàng vào CSDL nếu đã đăng nhập
+    if (isset($_SESSION['user_id'])) {
+        sync_session_to_db_cart($_SESSION['user_id']);
     }
     header("Location: cart.php?status=removed");
     exit;

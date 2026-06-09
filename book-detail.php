@@ -24,6 +24,11 @@ if (isset($_POST['add_to_cart_btn'])) {
         $_SESSION['cart'][$book_id] = $qty;
     }
     
+    // Đồng bộ giỏ hàng vào CSDL nếu đã đăng nhập
+    if (isset($_SESSION['user_id'])) {
+        sync_session_to_db_cart($_SESSION['user_id']);
+    }
+    
     header("Location: book-detail.php?id=" . $book_id . "&status=added");
     exit;
 }
