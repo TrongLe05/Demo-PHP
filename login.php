@@ -15,9 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
     
     if (empty($email) || empty($password)) {
-        $errors['global'] = 'Vui lòng điền đầy đủ email và mật khẩu.';
+        $errors['global'] = 'Vui lòng điền đầy đủ tên đăng nhập/email và mật khẩu.';
     } else {
+        // Thử tìm theo email trước, nếu không có thì tìm theo username
         $user = get_user_by_email($email);
+        if (!$user) {
+            $user = get_user_by_username($email);
+        }
         
         if ($user && (password_verify($password, $user['password']) || md5($password) === $user['password'] || $password === $user['password'])) {
             // Đăng nhập thành công, thiết lập session
@@ -37,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             exit;
         } else {
-            $errors['global'] = 'Email hoặc mật khẩu không chính xác.';
+            $errors['global'] = 'Tên đăng nhập/email hoặc mật khẩu không chính xác.';
         }
     }
 }
@@ -71,8 +75,9 @@ require_once __DIR__ . '/header.php';
         
         <form action="login.php" method="POST">
             <div class="form-group-custom">
-                <label for="email">Địa chỉ Email</label>
-                <input type="email" id="email" name="email" class="form-control-custom" 
+                <label for="email">Tên đăng nhập hoặc Email</label>
+                <input type="text" id="email" name="email" class="form-control-custom" 
+                       placeholder="Nhập tên đăng nhập hoặc email..."
                        value="<?php echo htmlspecialchars($email); ?>" required>
             </div>
             
@@ -94,7 +99,7 @@ require_once __DIR__ . '/header.php';
         <hr style="border-color: var(--glass-border);" class="my-4">
         
         <div class="text-center text-muted">
-            <small>Tài khoản Quản trị mẫu:<br><strong>admin@gmail.com</strong> / mật khẩu: <strong>123456</strong></small>
+            <small>Tài khoản Quản trị mẫu:<br>Tên đăng nhập: <strong>admin</strong> (hoặc email: <strong>admin@gmail.com</strong>) / mật khẩu: <strong>123456</strong></small>
         </div>
     </div>
 </div>

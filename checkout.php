@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if (empty($errors)) {
-        // Lưu đơn hàng vào file JSON thông qua helper
+        // Lưu đơn hàng vào CSDL MySQL thông qua helper
         if (save_order($fullname, $phone, $address, $cart_items, $total_price)) {
             // Xóa giỏ hàng sau khi đặt hàng thành công
             unset($_SESSION['cart']);

@@ -8,16 +8,28 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $errors = [];
+$username = '';
 $fullname = '';
 $email = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
     $fullname = trim($_POST['fullname'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
     
     // Validate
+    if (empty($username)) {
+        $errors['username'] = 'Tên đăng nhập không được để trống.';
+    } elseif (strlen($username) < 3) {
+        $errors['username'] = 'Tên đăng nhập phải chứa ít nhất 3 ký tự.';
+    } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+        $errors['username'] = 'Tên đăng nhập chỉ chứa chữ cái, số và dấu gạch dưới.';
+    } elseif (get_user_by_username($username) !== null) {
+        $errors['username'] = 'Tên đăng nhập này đã tồn tại.';
+    }
+    
     if (empty($fullname)) {
         $errors['fullname'] = 'Họ tên không được để trống.';
     }
@@ -41,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     if (empty($errors)) {
-        $new_user = register_user($fullname, $email, $password);
+        $new_user = register_user($username, $fullname, $email, $password);
         if ($new_user) {
             header("Location: login.php?status=registered");
             exit;
@@ -66,6 +78,15 @@ require_once __DIR__ . '/header.php';
         <?php endif; ?>
         
         <form action="register.php" method="POST">
+            <div class="form-group-custom">
+                <label for="username">Tên đăng nhập (Username) *</label>
+                <input type="text" id="username" name="username" class="form-control-custom" 
+                       value="<?php echo htmlspecialchars($username); ?>" required>
+                <?php if (isset($errors['username'])): ?>
+                    <span class="text-danger fs-7 d-block mt-1"><?php echo $errors['username']; ?></span>
+                <?php endif; ?>
+            </div>
+
             <div class="form-group-custom">
                 <label for="fullname">Họ tên của bạn *</label>
                 <input type="text" id="fullname" name="fullname" class="form-control-custom" 

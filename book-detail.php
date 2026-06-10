@@ -14,6 +14,11 @@ if (isset($_POST['add_to_cart_btn'])) {
     $qty = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
     if ($qty <= 0) $qty = 1;
     
+    // Giới hạn số lượng mua không vượt quá số lượng tồn kho
+    if (isset($book['quantity']) && $qty > $book['quantity']) {
+        $qty = $book['quantity'];
+    }
+    
     if (!isset($_SESSION['cart'])) {
         $_SESSION['cart'] = [];
     }
@@ -73,6 +78,15 @@ require_once __DIR__ . '/header.php';
                     <?php echo number_format($book['price'], 0, ',', '.'); ?> đ
                 </div>
                 
+                <div class="mb-4 text-white">
+                    Tình trạng: 
+                    <?php if (isset($book['quantity']) && $book['quantity'] > 0): ?>
+                        <span class="badge bg-success px-3 py-2 fs-6">Còn hàng (Tồn kho: <?php echo $book['quantity']; ?> cuốn)</span>
+                    <?php else: ?>
+                        <span class="badge bg-danger px-3 py-2 fs-6">Tạm hết hàng</span>
+                    <?php endif; ?>
+                </div>
+                
                 <p class="text-muted mb-4 fs-5" style="line-height: 1.8;">
                     <?php echo nl2br(htmlspecialchars($book['description'])); ?>
                 </p>
@@ -80,16 +94,23 @@ require_once __DIR__ . '/header.php';
                 <hr style="border-color: var(--glass-border);" class="my-4">
                 
                 <!-- Form thêm vào giỏ hàng -->
-                <form action="book-detail.php?id=<?php echo $book['id']; ?>" method="POST" class="d-flex align-items-center gap-3 flex-wrap">
-                    <div class="d-flex align-items-center gap-2">
-                        <label for="quantity" class="text-muted font-weight-500">Số lượng:</label>
-                        <input type="number" id="quantity" name="quantity" class="form-control-custom text-center" style="width: 80px;" value="1" min="1" max="100">
+                <?php if (isset($book['quantity']) && $book['quantity'] > 0): ?>
+                    <form action="book-detail.php?id=<?php echo $book['id']; ?>" method="POST" class="d-flex align-items-center gap-3 flex-wrap">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="quantity" class="text-muted font-weight-500">Số lượng:</label>
+                            <input type="number" id="quantity" name="quantity" class="form-control-custom text-center" style="width: 80px;" value="1" min="1" max="<?php echo $book['quantity']; ?>">
+                        </div>
+                        
+                        <button type="submit" name="add_to_cart_btn" class="btn btn-primary-custom px-4 py-3">
+                            <i class="fas fa-cart-plus"></i> Thêm vào giỏ hàng
+                        </button>
+                    </form>
+                <?php else: ?>
+                    <div class="alert alert-custom alert-danger-custom d-flex align-items-center gap-2" role="alert">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Sản phẩm này hiện đang hết hàng. Vui lòng quay lại sau!</span>
                     </div>
-                    
-                    <button type="submit" name="add_to_cart_btn" class="btn btn-primary-custom px-4 py-3">
-                        <i class="fas fa-cart-plus"></i> Thêm vào giỏ hàng
-                    </button>
-                </form>
+                <?php endif; ?>
             </div>
         </div>
     </div>

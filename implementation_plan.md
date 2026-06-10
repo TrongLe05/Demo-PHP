@@ -1,12 +1,12 @@
 # Kế hoạch thực hiện Đề tài 2: Website bán sách online
 
-Tài liệu này trình bày chi tiết kế hoạch xây dựng ứng dụng Website bán sách online bằng ngôn ngữ PHP (sử dụng Session và tệp tin JSON làm cơ sở dữ liệu giả lập), kết hợp với tài liệu thiết kế cơ sở dữ liệu (Database Design) chi tiết dưới dạng tệp tin Markdown.
+Tài liệu này trình bày chi tiết kế hoạch xây dựng ứng dụng Website bán sách online bằng ngôn ngữ PHP (sử dụng Session và cơ sở dữ liệu MySQL), kết hợp với tài liệu thiết kế cơ sở dữ liệu (Database Design) chi tiết dưới dạng tệp tin Markdown.
 
 ## User Review Required
 
 > [!IMPORTANT]
-> - **Cơ sở dữ liệu giả lập (Mock DB):** Để đáp ứng yêu cầu "không cần làm DB, chỉ cần tạo file .md chứa các bảng, thiết kế, dữ liệu mẫu", toàn bộ hoạt động lưu trữ dữ liệu của website PHP (quản lý sách, tài khoản người dùng, đơn hàng) sẽ được giả lập thông qua các tệp tin JSON trên máy chủ (`books.json`, `users.json`, `orders.json`). Cách tiếp cận này giúp website chạy được đầy đủ tính năng (Đăng ký, Đăng nhập, Thêm/Sửa/Xóa sách của admin, Lưu đơn hàng khi thanh toán) mà không cần cài đặt hoặc kết nối cơ sở dữ liệu MySQL thật.
-> - **Giao diện người dùng:** Sẽ sử dụng CSS thuần (Vanilla CSS) kết hợp Bootstrap 5 (được khuyến khích trong đề bài) để thiết kế giao diện Glassmorphism hiện đại, chuyên nghiệp và responsive tốt trên mọi thiết bị.
+> - **Cơ sở dữ liệu (MySQL DB):** Toàn bộ hoạt động lưu trữ dữ liệu của website PHP (quản lý sách, tài khoản người dùng, giỏ hàng, đơn hàng, chi tiết đơn hàng) được triển khai trên hệ quản trị cơ sở dữ liệu MySQL thật kết hợp với cấu trúc thiết kế chi tiết dưới dạng tệp tin Markdown.
+> - **Giao diện người dùng:** Sử dụng CSS thuần (Vanilla CSS) kết hợp Bootstrap 5 (được khuyến khích trong đề bài) để thiết kế giao diện Glassmorphism hiện đại, chuyên nghiệp và responsive tốt trên mọi thiết bị.
 
 ## Open Questions
 
@@ -22,22 +22,19 @@ Chúng ta sẽ tạo và chỉnh sửa các tệp tin sau trong thư mục dự 
 
 #### [NEW] [database_design.md](file:///D:/CODE/CODE_VS/Demo%20PHP/database_design.md)
 Tệp tin Markdown chứa thiết kế chi tiết CSDL cho Đề tài 2 (Website bán sách online), bao gồm:
-- Sơ đồ cấu trúc các bảng (`books`, `users`, `orders`, `order_items`).
+- Sơ đồ cấu trúc các bảng (`users`, `books`, `orders`, `order_details`, `cart`).
 - Kiểu dữ liệu, mô tả các cột, khóa chính, khóa ngoại.
 - Dữ liệu mẫu (SQL Insert và dạng bảng trực quan).
 
 ---
 
-### 2. Tệp tin dữ liệu giả lập (JSON Mock Database)
+### 2. Cấu trúc cơ sở dữ liệu (MySQL Database)
 
-#### [NEW] [books.json](file:///D:/CODE/CODE_VS/Demo%20PHP/books.json)
-Chứa danh sách sách ban đầu bao gồm các trường: `id`, `title`, `author`, `category`, `price`, `image`, `description`, `featured` (sách nổi bật).
+#### [NEW] [CSDL.txt](file:///D:/CODE/CODE_VS/Demo%20PHP/CSDL.txt)
+Chứa mã nguồn SQL tạo cơ sở dữ liệu `ban_sach_online`, các bảng và dữ liệu mẫu khởi tạo.
 
-#### [NEW] [users.json](file:///D:/CODE/CODE_VS/Demo%20PHP/users.json)
-Chứa danh sách người dùng. Mặc định sẽ tạo sẵn một tài khoản Admin (`admin@bookstore.com` / mật khẩu: `admin123`) và một tài khoản Khách hàng mẫu.
-
-#### [NEW] [orders.json](file:///D:/CODE/CODE_VS/Demo%20PHP/orders.json)
-Tệp tin trống (mảng rỗng `[]`) dùng để lưu các đơn hàng được đặt từ phía khách hàng.
+#### [NEW] [setup_db.php](file:///D:/CODE/CODE_VS/Demo%20PHP/setup_db.php)
+Kịch bản PHP tự động nạp cấu trúc cơ sở dữ liệu và dữ liệu mẫu từ `CSDL.txt` vào MySQL Server.
 
 ---
 
@@ -61,20 +58,21 @@ Quản lý giỏ hàng:
 - Cho phép cập nhật số lượng, xóa sách khỏi giỏ hàng.
 - Tính và hiển thị tổng tiền tự động.
 - Nút tiến hành thanh toán (Checkout).
+- Đồng bộ giỏ hàng với MySQL DB khi thay đổi hoặc khi đăng nhập.
 
 #### [NEW] [checkout.php](file:///D:/CODE/CODE_VS/Demo%20PHP/checkout.php)
 Trang thanh toán:
 - Nhập thông tin người nhận (Họ tên, Số điện thoại, Địa chỉ giao hàng).
-- Xác nhận đơn hàng và lưu đơn hàng vào `orders.json` (tương đương lưu vào DB).
+- Xác nhận đơn hàng và lưu đơn hàng vào CSDL MySQL thông qua helper.
 - Xóa giỏ hàng sau khi đặt hàng thành công.
 
 #### [NEW] [login.php](file:///D:/CODE/CODE_VS/Demo%20PHP/login.php) & [register.php](file:///D:/CODE/CODE_VS/Demo%20PHP/register.php)
-Trang đăng ký và đăng nhập tài khoản. Lưu thông tin người dùng mới vào `users.json`. Quản lý trạng thái bằng PHP Session.
+Trang đăng ký và đăng nhập tài khoản. Lưu thông tin người dùng mới vào CSDL MySQL. Quản lý trạng thái bằng PHP Session.
 
 #### [NEW] [admin.php](file:///D:/CODE/CODE_VS/Demo%20PHP/admin.php)
 Trang quản trị dành cho tài khoản Admin (kiểm tra quyền bằng session):
 - Hiển thị danh sách toàn bộ sách hiện có.
-- Thêm sách mới (nhập tên, tác giả, giá, thể loại, ảnh bìa trực tuyến hoặc đường dẫn, mô tả).
+- Thêm sách mới (nhập tên, tác giả, giá, thể loại, tải file ảnh bìa lên server hoặc nhập URL, mô tả).
 - Sửa thông tin sách hiện tại.
 - Xóa sách khỏi danh sách.
 - Hiển thị danh sách đơn hàng đã được đặt bởi khách hàng.
@@ -86,7 +84,7 @@ Xử lý đăng xuất tài khoản.
 Các file layout dùng chung để tránh trùng lặp mã nguồn HTML/CSS.
 
 #### [MODIFY] [style.css](file:///D:/CODE/CODE_VS/Demo%20PHP/style.css)
-Thay đổi toàn bộ giao diện thành giao diện Glassmorphism sang trọng, tông màu xanh mực/vàng nhạt trang nhã phù hợp với cửa hàng sách trực tuyến.
+Hệ thống CSS Glassmorphism sang trọng, tông màu xanh mực/vàng nhạt trang nhã phù hợp với cửa hàng sách trực tuyến.
 
 ---
 
@@ -100,8 +98,8 @@ Không áp dụng (Dự án PHP thuần không tích hợp PHPUnit).
 2. Kiểm tra bộ lọc theo thể loại (Category filter) và tìm kiếm sách.
 3. Thực hiện Đăng ký tài khoản mới và Đăng nhập.
 4. Thêm một vài cuốn sách vào giỏ hàng, cập nhật số lượng và kiểm tra tổng tiền.
-5. Tiến hành thanh toán, nhập thông tin và kiểm tra xem đơn hàng đã được lưu vào tệp `orders.json` chưa.
-6. Đăng nhập tài khoản Admin (`admin@bookstore.com` / `admin123`).
+5. Tiến hành thanh toán, nhập thông tin và kiểm tra xem đơn hàng đã được lưu vào cơ sở dữ liệu chưa.
+6. Đăng nhập tài khoản Admin (`admin@gmail.com` / `123456`).
 7. Truy cập trang quản trị `admin.php`, thực hiện:
    - Thêm một cuốn sách mới (và xác minh nó xuất hiện ngoài trang chủ).
    - Sửa thông tin sách.

@@ -49,10 +49,10 @@ function get_book_by_id($id) {
 /**
  * Thêm một cuốn sách mới (Admin)
  */
-function add_book($title, $author, $category, $price, $image, $description, $featured = 0) {
+function add_book($title, $author, $category, $price, $image, $description, $featured = 0, $quantity = 10) {
     global $pdo;
     try {
-        $stmt = $pdo->prepare("INSERT INTO books (title, author, category, price, image, description, featured) VALUES (:title, :author, :category, :price, :image, :description, :featured)");
+        $stmt = $pdo->prepare("INSERT INTO books (title, author, category, price, image, description, featured, quantity) VALUES (:title, :author, :category, :price, :image, :description, :featured, :quantity)");
         return $stmt->execute([
             'title' => $title,
             'author' => $author,
@@ -60,7 +60,8 @@ function add_book($title, $author, $category, $price, $image, $description, $fea
             'price' => (float)$price,
             'image' => $image ? $image : 'dac_nhan_tam.jpg',
             'description' => $description,
-            'featured' => (int)$featured
+            'featured' => (int)$featured,
+            'quantity' => (int)$quantity
         ]);
     } catch (PDOException $e) {
         return false;
@@ -70,10 +71,10 @@ function add_book($title, $author, $category, $price, $image, $description, $fea
 /**
  * Cập nhật thông tin sách (Admin)
  */
-function update_book($id, $title, $author, $category, $price, $image, $description, $featured = 0) {
+function update_book($id, $title, $author, $category, $price, $image, $description, $featured = 0, $quantity = 10) {
     global $pdo;
     try {
-        $sql = "UPDATE books SET title = :title, author = :author, category = :category, price = :price, description = :description, featured = :featured";
+        $sql = "UPDATE books SET title = :title, author = :author, category = :category, price = :price, description = :description, featured = :featured, quantity = :quantity";
         $params = [
             'title' => $title,
             'author' => $author,
@@ -81,6 +82,7 @@ function update_book($id, $title, $author, $category, $price, $image, $descripti
             'price' => (float)$price,
             'description' => $description,
             'featured' => (int)$featured,
+            'quantity' => (int)$quantity,
             'id' => (int)$id
         ];
         if ($image) {
@@ -136,19 +138,34 @@ function get_user_by_email($email) {
 }
 
 /**
- * Đăng ký người dùng mới
+ * Lấy thông tin người dùng theo tên đăng nhập (Username)
  */
-function register_user($fullname, $email, $password) {
+function get_user_by_username($username) {
     global $pdo;
     try {
-        // Kiểm tra trùng email
-        if (get_user_by_email($email) !== null) {
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :username");
+        $stmt->execute(['username' => trim($username)]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
+/**
+ * Đăng ký người dùng mới
+ */
+function register_user($username, $fullname, $email, $password) {
+    global $pdo;
+    try {
+        // Kiểm tra trùng email hoặc trùng username
+        if (get_user_by_email($email) !== null || get_user_by_username($username) !== null) {
             return false;
         }
         
-        $stmt = $pdo->prepare("INSERT INTO users (fullname, email, password, role) VALUES (:fullname, :email, :password, 'user')");
+        $stmt = $pdo->prepare("INSERT INTO users (username, fullname, email, password, role) VALUES (:username, :fullname, :email, :password, 'user')");
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $success = $stmt->execute([
+            'username' => trim($username),
             'fullname' => $fullname,
             'email' => trim($email),
             'password' => $hashedPassword
@@ -158,6 +175,7 @@ function register_user($fullname, $email, $password) {
             $userId = $pdo->lastInsertId();
             return [
                 'id' => $userId,
+                'username' => trim($username),
                 'fullname' => $fullname,
                 'email' => trim($email),
                 'role' => 'user'
@@ -217,14 +235,21 @@ function save_order($customer_name, $customer_phone, $customer_address, $cart_it
         
         $order_id = $pdo->lastInsertId();
         
-        // Thêm chi tiết đơn hàng
+        // Thêm chi tiết đơn hàng và Trừ kho
         $stmt_detail = $pdo->prepare("INSERT INTO order_details (order_id, book_id, quantity, price) VALUES (:order_id, :book_id, :quantity, :price)");
+        $stmt_update_qty = $pdo->prepare("UPDATE books SET quantity = quantity - :qty WHERE id = :book_id");
         foreach ($cart_items as $item) {
+            // Lưu chi tiết
             $stmt_detail->execute([
                 'order_id' => $order_id,
                 'book_id' => $item['book_id'],
                 'quantity' => $item['quantity'],
                 'price' => $item['price']
+            ]);
+            // Trừ số lượng sách tồn kho
+            $stmt_update_qty->execute([
+                'qty' => $item['quantity'],
+                'book_id' => $item['book_id']
             ]);
         }
         

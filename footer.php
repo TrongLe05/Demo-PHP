@@ -28,7 +28,7 @@
                     <h6 class="text-white mb-3">Nhóm thực hiện</h6>
                     <ul class="list-unstyled">
                         <li><span class="text-muted">Nhóm sinh viên thực hiện đề tài số 2</span></li>
-                        <li><span class="text-muted">Cơ sở dữ liệu:</span> Đã lập kế hoạch chi tiết trong tài liệu Markdown và triển khai giả lập JSON.</li>
+                        <li><span class="text-muted">Cơ sở dữ liệu:</span> Đã lập kế hoạch chi tiết trong tài liệu Markdown và triển khai CSDL MySQL hoàn chỉnh.</li>
                     </ul>
                 </div>
             </div>

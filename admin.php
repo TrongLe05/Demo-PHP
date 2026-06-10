@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $image = trim($_POST['image'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $featured = isset($_POST['featured']) ? 1 : 0;
+        $quantity = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 10;
         
         // Xử lý upload file ảnh nếu có tệp được chọn tải lên
         if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
@@ -66,11 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($author)) $errors['author'] = 'Tác giả không được bỏ trống.';
         if (empty($category)) $errors['category'] = 'Thể loại không được bỏ trống.';
         if ($price <= 0) $errors['price'] = 'Giá bán phải lớn hơn 0.';
+        if ($quantity < 0) $errors['quantity'] = 'Số lượng tồn kho không được nhỏ hơn 0.';
         
         if (empty($errors)) {
             if ($id > 0) {
                 // Sửa sách
-                if (update_book($id, $title, $author, $category, $price, $image, $description, $featured)) {
+                if (update_book($id, $title, $author, $category, $price, $image, $description, $featured, $quantity)) {
                     header("Location: admin.php?status=updated");
                     exit;
                 } else {
@@ -78,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             } else {
                 // Thêm sách mới
-                if (add_book($title, $author, $category, $price, $image, $description, $featured)) {
+                if (add_book($title, $author, $category, $price, $image, $description, $featured, $quantity)) {
                     header("Location: admin.php?status=added");
                     exit;
                 } else {
@@ -155,6 +157,7 @@ require_once __DIR__ . '/header.php';
                         <th>Tên sách / Tác giả</th>
                         <th>Thể loại</th>
                         <th>Giá bán</th>
+                        <th>Tồn kho</th>
                         <th>Nổi bật</th>
                         <th style="width: 150px; text-align: center;">Hành động</th>
                     </tr>
@@ -177,6 +180,7 @@ require_once __DIR__ . '/header.php';
                                 </td>
                                 <td><?php echo htmlspecialchars($b['category']); ?></td>
                                 <td><strong class="text-warning"><?php echo number_format($b['price'], 0, ',', '.'); ?> đ</strong></td>
+                                <td><span class="badge <?php echo ($b['quantity'] > 0) ? 'bg-info' : 'bg-danger'; ?>"><?php echo $b['quantity']; ?></span></td>
                                 <td>
                                     <?php echo (isset($b['featured']) && $b['featured'] == 1) ? '<span class="badge bg-success">Có</span>' : '<span class="badge bg-secondary">Không</span>'; ?>
                                 </td>
@@ -225,9 +229,25 @@ require_once __DIR__ . '/header.php';
                 <div class="row">
                     <div class="col-md-6 form-group-custom">
                         <label for="category">Thể loại *</label>
-                        <input type="text" id="category" name="category" class="form-control-custom" 
-                               placeholder="Ví dụ: Kỹ năng sống, Công nghệ, Tiểu thuyết..."
-                               value="<?php echo htmlspecialchars($_POST['category'] ?? $edit_book['category'] ?? ''); ?>" required>
+                        <?php
+                        $categories_list = [
+                            'Tâm lý - Kỹ năng sống',
+                            'Tiểu thuyết',
+                            'Công nghệ thông tin',
+                            'Văn học Việt Nam',
+                            'Khoa học vũ trụ',
+                            'Tài chính cá nhân'
+                        ];
+                        ?>
+                        <select id="category" name="category" class="form-select form-control-custom" style="color: white; background-color: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);" required>
+                            <option value="" style="background-color: #1a1a1a;">-- Chọn thể loại --</option>
+                            <?php foreach ($categories_list as $cat): ?>
+                                <option value="<?php echo htmlspecialchars($cat); ?>" style="background-color: #1a1a1a;" <?php 
+                                    $current_cat = $_POST['category'] ?? $edit_book['category'] ?? '';
+                                    if ($current_cat === $cat) echo 'selected'; 
+                                ?>><?php echo htmlspecialchars($cat); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                         <?php if (isset($errors['category'])): ?>
                             <span class="text-danger fs-7"><?php echo $errors['category']; ?></span>
                         <?php endif; ?>
@@ -238,6 +258,17 @@ require_once __DIR__ . '/header.php';
                                value="<?php echo htmlspecialchars($_POST['price'] ?? $edit_book['price'] ?? ''); ?>" min="1" required>
                         <?php if (isset($errors['price'])): ?>
                             <span class="text-danger fs-7"><?php echo $errors['price']; ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group-custom">
+                        <label for="quantity">Số lượng tồn kho *</label>
+                        <input type="number" id="quantity" name="quantity" class="form-control-custom" 
+                               value="<?php echo htmlspecialchars($_POST['quantity'] ?? $edit_book['quantity'] ?? '10'); ?>" min="0" required>
+                        <?php if (isset($errors['quantity'])): ?>
+                            <span class="text-danger fs-7"><?php echo $errors['quantity']; ?></span>
                         <?php endif; ?>
                     </div>
                 </div>
