@@ -40,6 +40,8 @@ CREATE TABLE orders (
     customer_name VARCHAR(100) NOT NULL,
     customer_phone VARCHAR(15) NOT NULL,
     customer_address TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'Chờ xác nhận',
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'COD',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -94,8 +96,8 @@ INSERT INTO cart (user_id, book_id, quantity) VALUES
 (2, 1, 2); -- Mua 2 cuốn Đắc Nhân Tâm
 
 -- Thêm Đơn hàng mẫu cho Trần Thị B (user_id = 3) đã thanh toán xong
-INSERT INTO orders (user_id, total_price, customer_name, customer_phone, customer_address, created_at) VALUES
-(3, 329000.00, 'Trần Thị B', '0912345678', '123 Đường Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh', '2024-05-15 10:30:00');
+INSERT INTO orders (user_id, total_price, customer_name, customer_phone, customer_address, status, payment_method, created_at) VALUES
+(3, 329000.00, 'Trần Thị B', '0912345678', '123 Đường Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh', 'Đã giao', 'Ví điện tử', '2024-05-15 10:30:00');
 
 -- Thêm Chi tiết cho Đơn hàng trên (order_id = 1)
 INSERT INTO order_details (order_id, book_id, quantity, price) VALUES

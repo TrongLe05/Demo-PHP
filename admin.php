@@ -11,6 +11,33 @@ $action = isset($_GET['action']) ? $_GET['action'] : 'list';
 $errors = [];
 $success_message = '';
 
+// Xử lý cập nhật trạng thái đơn hàng (Admin)
+if ($action === 'update_status' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $order_id = isset($_POST['order_id']) ? (int)$_POST['order_id'] : 0;
+    $status = trim($_POST['status'] ?? '');
+    
+    $valid_statuses = ['Chờ xác nhận', 'Đã xác nhận', 'Đang giao', 'Đã giao', 'Đã hủy'];
+    if ($order_id > 0 && in_array($status, $valid_statuses)) {
+        $success = false;
+        if ($status === 'Đã hủy') {
+            $success = cancel_order($order_id);
+        } else {
+            $success = update_order_status($order_id, $status);
+        }
+        
+        if ($success) {
+            header("Location: admin.php?action=orders&status=status_updated");
+            exit;
+        } else {
+            $errors['global'] = 'Lỗi hệ thống! Không thể cập nhật trạng thái đơn hàng.';
+            $action = 'orders';
+        }
+    } else {
+        $errors['global'] = 'Dữ liệu không hợp lệ.';
+        $action = 'orders';
+    }
+}
+
 // Xử lý Xóa sách
 if ($action === 'delete') {
     $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -99,6 +126,7 @@ if (isset($_GET['status'])) {
     if ($_GET['status'] == 'added') $success_message = 'Đã thêm sách mới thành công!';
     if ($_GET['status'] == 'updated') $success_message = 'Đã cập nhật thông tin sách thành công!';
     if ($_GET['status'] == 'deleted') $success_message = 'Đã xóa sách thành công!';
+    if ($_GET['status'] == 'status_updated') $success_message = 'Đã cập nhật trạng thái đơn hàng thành công!';
 }
 
 // Đọc thông tin nếu ở chế độ sửa (edit)
@@ -345,6 +373,81 @@ require_once __DIR__ . '/header.php';
                             <div class="col-md-4">
                                 <span class="text-muted d-block">Địa chỉ nhận hàng:</span>
                                 <strong class="text-white"><?php echo htmlspecialchars($order['customer_address']); ?></strong>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3 align-items-center">
+                            <div class="col-md-3">
+                                <span class="text-muted d-block" style="font-size: 0.85rem;">Hình thức thanh toán:</span>
+                                <strong class="text-white" style="font-size: 0.95rem;">
+                                    <?php 
+                                    $pm_icon = 'fa-money-bill-wave text-success';
+                                    if ($order['payment_method'] === 'Ví điện tử') $pm_icon = 'fa-wallet text-info';
+                                    elseif ($order['payment_method'] === 'Thẻ tín dụng') $pm_icon = 'fa-credit-card text-primary';
+                                    elseif ($order['payment_method'] === 'QR') $pm_icon = 'fa-qrcode text-warning';
+                                    ?>
+                                    <i class="fas <?php echo $pm_icon; ?> me-1"></i>
+                                    <?php echo htmlspecialchars($order['payment_method']); ?>
+                                </strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="text-muted d-block" style="font-size: 0.85rem;">Trạng thái hiện tại:</span>
+                                <?php 
+                                $badge_class = 'bg-secondary';
+                                if ($order['status'] === 'Chờ xác nhận') $badge_class = 'bg-warning text-dark';
+                                elseif ($order['status'] === 'Đã xác nhận') $badge_class = 'bg-primary';
+                                elseif ($order['status'] === 'Đang giao') $badge_class = 'bg-info text-dark';
+                                elseif ($order['status'] === 'Đã giao') $badge_class = 'bg-success';
+                                elseif ($order['status'] === 'Đã hủy') $badge_class = 'bg-danger';
+                                ?>
+                                <span class="badge <?php echo $badge_class; ?> px-2 py-1 mt-1"><?php echo htmlspecialchars($order['status']); ?></span>
+                            </div>
+                            <div class="col-md-6 mt-3 mt-md-0 d-flex flex-wrap gap-2 align-items-center">
+                                <?php if ($order['status'] !== 'Đã giao' && $order['status'] !== 'Đã hủy'): ?>
+                                    <?php
+                                    $next_status = '';
+                                    $next_label = '';
+                                    $next_btn_class = 'btn-primary-custom';
+                                    $next_icon = 'fa-check';
+                                    
+                                    if ($order['status'] === 'Chờ xác nhận') {
+                                        $next_status = 'Đã xác nhận';
+                                        $next_label = 'Xác nhận đơn hàng';
+                                        $next_btn_class = 'btn-primary-custom';
+                                        $next_icon = 'fa-check-circle';
+                                    } elseif ($order['status'] === 'Đã xác nhận') {
+                                        $next_status = 'Đang giao';
+                                        $next_label = 'Bắt đầu giao hàng';
+                                        $next_btn_class = 'btn-secondary-custom'; // Style cho giao diện sáng
+                                        $next_icon = 'fa-shipping-fast';
+                                    } elseif ($order['status'] === 'Đang giao') {
+                                        $next_status = 'Đã giao';
+                                        $next_label = 'Hoàn thành giao hàng';
+                                        $next_btn_class = 'btn-success text-white';
+                                        $next_icon = 'fa-check-double';
+                                    }
+                                    ?>
+                                    
+                                    <?php if (!empty($next_status)): ?>
+                                        <form action="admin.php?action=update_status" method="POST" class="d-inline">
+                                            <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+                                            <input type="hidden" name="status" value="<?php echo $next_status; ?>">
+                                            <button type="submit" class="btn <?php echo $next_btn_class; ?> btn-sm py-1 px-3" style="border-radius: 8px; font-weight: 500;">
+                                                <i class="fas <?php echo $next_icon; ?> me-1"></i> <?php echo $next_label; ?>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <form action="admin.php?action=update_status" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Sách sẽ được hoàn trả vào kho.');" class="d-inline">
+                                        <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+                                        <input type="hidden" name="status" value="Đã hủy">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm py-1 px-3" style="border-radius: 8px; font-weight: 500;">
+                                            <i class="fas fa-times me-1"></i> Hủy đơn hàng
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <span class="text-muted" style="font-size: 0.9rem;"><i class="fas fa-info-circle me-1"></i>Đơn hàng đã hoàn thành hoặc đã hủy.</span>
+                                <?php endif; ?>
                             </div>
                         </div>
 

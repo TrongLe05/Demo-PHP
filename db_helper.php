@@ -10,6 +10,20 @@ define('DB_PASS', ''); // Mặc định XAMPP trống
 try {
     $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    
+    // Tự động kiểm tra và nâng cấp cấu trúc bảng orders nếu cần
+    try {
+        $stmt_status = $pdo->query("SHOW COLUMNS FROM orders LIKE 'status'");
+        if (!$stmt_status->fetch()) {
+            $pdo->exec("ALTER TABLE orders ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Chờ xác nhận'");
+        }
+        $stmt_pm = $pdo->query("SHOW COLUMNS FROM orders LIKE 'payment_method'");
+        if (!$stmt_pm->fetch()) {
+            $pdo->exec("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(50) NOT NULL DEFAULT 'COD'");
+        }
+    } catch (PDOException $e) {
+        // Bỏ qua lỗi nếu bảng chưa tồn tại
+    }
 } catch (PDOException $e) {
     die("Kết nối CSDL MySQL thất bại: " . $e->getMessage());
 }
@@ -215,7 +229,7 @@ function get_orders() {
 /**
  * Lưu đơn hàng mới vào CSDL (sử dụng Transaction)
  */
-function save_order($customer_name, $customer_phone, $customer_address, $cart_items, $total_price) {
+function save_order($customer_name, $customer_phone, $customer_address, $cart_items, $total_price, $payment_method = 'COD') {
     global $pdo;
     try {
         $pdo->beginTransaction();
@@ -224,13 +238,14 @@ function save_order($customer_name, $customer_phone, $customer_address, $cart_it
         // Nếu không có user đăng nhập, mặc định gán cho user_id = 2 (Nguyễn Văn A - Tài khoản user mẫu)
         $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 2;
         
-        $stmt = $pdo->prepare("INSERT INTO orders (user_id, total_price, customer_name, customer_phone, customer_address) VALUES (:user_id, :total_price, :customer_name, :customer_phone, :customer_address)");
+        $stmt = $pdo->prepare("INSERT INTO orders (user_id, total_price, customer_name, customer_phone, customer_address, payment_method) VALUES (:user_id, :total_price, :customer_name, :customer_phone, :customer_address, :payment_method)");
         $stmt->execute([
             'user_id' => $user_id,
             'total_price' => $total_price,
             'customer_name' => $customer_name,
             'customer_phone' => $customer_phone,
-            'customer_address' => $customer_address
+            'customer_address' => $customer_address,
+            'payment_method' => $payment_method
         ]);
         
         $order_id = $pdo->lastInsertId();
@@ -334,6 +349,93 @@ function sync_session_to_db_cart($user_id) {
         if ($pdo->inTransaction()) {
             $pdo->rollBack();
         }
+    }
+}
+
+/**
+ * Cập nhật trạng thái đơn hàng (Admin)
+ */
+function update_order_status($order_id, $status) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("UPDATE orders SET status = :status WHERE id = :id");
+        return $stmt->execute([
+            'status' => $status,
+            'id' => (int)$order_id
+        ]);
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+/**
+ * Lấy danh sách đơn hàng của một người dùng cụ thể
+ */
+function get_orders_by_user($user_id) {
+    global $pdo;
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM orders WHERE user_id = :user_id ORDER BY id DESC");
+        $stmt->execute(['user_id' => (int)$user_id]);
+        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach ($orders as &$order) {
+            $stmt_details = $pdo->prepare("
+                SELECT od.book_id, od.quantity, od.price, b.title, b.image
+                FROM order_details od
+                JOIN books b ON od.book_id = b.id
+                WHERE od.order_id = :order_id
+            ");
+            $stmt_details->execute(['order_id' => $order['id']]);
+            $order['items'] = $stmt_details->fetchAll(PDO::FETCH_ASSOC);
+        }
+        return $orders;
+    } catch (PDOException $e) {
+        return [];
+    }
+}
+
+/**
+ * Hủy đơn hàng và hoàn trả số lượng tồn kho (Admin & Khách hàng)
+ */
+function cancel_order($order_id) {
+    global $pdo;
+    try {
+        $pdo->beginTransaction();
+        
+        // 1. Kiểm tra trạng thái hiện tại
+        $stmt = $pdo->prepare("SELECT status FROM orders WHERE id = :id");
+        $stmt->execute(['id' => (int)$order_id]);
+        $order = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$order || $order['status'] === 'Đã hủy') {
+            $pdo->rollBack();
+            return false;
+        }
+        
+        // 2. Cập nhật trạng thái thành Đã hủy
+        $stmt_update = $pdo->prepare("UPDATE orders SET status = 'Đã hủy' WHERE id = :id");
+        $stmt_update->execute(['id' => (int)$order_id]);
+        
+        // 3. Hoàn lại số lượng sách vào kho
+        $stmt_items = $pdo->prepare("SELECT book_id, quantity FROM order_details WHERE order_id = :order_id");
+        $stmt_items->execute(['order_id' => (int)$order_id]);
+        $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+        
+        $stmt_restore_stock = $pdo->prepare("UPDATE books SET quantity = quantity + :qty WHERE id = :book_id");
+        foreach ($items as $item) {
+            $stmt_restore_stock->execute([
+                'qty' => (int)$item['quantity'],
+                'book_id' => (int)$item['book_id']
+            ]);
+        }
+        
+        $pdo->commit();
+        return true;
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        return false;
     }
 }
 ?>

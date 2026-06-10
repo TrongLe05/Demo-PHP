@@ -85,6 +85,8 @@ foreach ($all_books as $book) {
                                     <li><a class="dropdown-item" href="admin.php"><i class="fas fa-cog me-2"></i>Quản lý cửa hàng</a></li>
                                     <li><hr class="dropdown-divider" style="border-color: var(--glass-border);"></li>
                                 <?php endif; ?>
+                                <li><a class="dropdown-item" href="orders.php"><i class="fas fa-receipt me-2"></i>Đơn hàng của tôi</a></li>
+                                <li><hr class="dropdown-divider" style="border-color: var(--glass-border);"></li>
                                 <li><a class="dropdown-item text-danger" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
                             </ul>
                         </div>

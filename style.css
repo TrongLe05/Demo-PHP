@@ -1,18 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 
 :root {
-    --bg-primary: #0a0c16;
-    --bg-secondary: #121526;
-    --accent-color: #ffb703; /* Gold */
-    --accent-hover: #fb8500;
-    --primary-color: #6366f1; /* Indigo */
-    --primary-hover: #4f46e5;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-highlight: rgba(255, 255, 255, 0.15);
-    --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --accent-color: #f97316; /* Warm orange */
+    --accent-hover: #ea580c;
+    --primary-color: #4f46e5; /* Indigo */
+    --primary-hover: #4338ca;
+    --text-main: #0f172a; /* Dark slate text */
+    --text-muted: #64748b;
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.5);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
     --font-heading: 'Playfair Display', Georgia, serif;
     --font-body: 'Outfit', sans-serif;
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -21,8 +21,8 @@
 body {
     background-color: var(--bg-primary);
     background-image: 
-        radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-        radial-gradient(at 90% 80%, rgba(251, 133, 0, 0.1) 0px, transparent 50%);
+        radial-gradient(at 10% 20%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+        radial-gradient(at 90% 80%, rgba(249, 115, 22, 0.03) 0px, transparent 50%);
     background-attachment: fixed;
     color: var(--text-main);
     font-family: var(--font-body);
@@ -70,7 +70,7 @@ body {
 
 /* Navigation Navbar */
 .navbar {
-    background: rgba(10, 12, 22, 0.7);
+    background: rgba(255, 255, 255, 0.8);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--glass-border);
@@ -160,7 +160,7 @@ body {
     font-size: 3.5rem;
     font-weight: 700;
     margin-bottom: 1.5rem;
-    background: linear-gradient(to right, #ffffff, #94a3b8, var(--accent-color));
+    background: linear-gradient(to right, #0f172a, #475569, var(--accent-color));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -451,7 +451,7 @@ body {
 
 .form-control-custom {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.02);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
     padding: 0.75rem 1rem;
@@ -460,9 +460,9 @@ body {
 }
 
 .form-control-custom:focus {
-    background: rgba(255, 255, 255, 0.08);
+    background: #ffffff;
     border-color: var(--primary-color);
-    box-shadow: 0 0 10px rgba(99, 102, 241, 0.2);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.1);
     outline: none;
 }
 
@@ -520,7 +520,7 @@ body {
 .cart-qty-input {
     width: 60px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.02);
     border: 1px solid var(--glass-border);
     color: var(--text-main);
     border-radius: 6px;
@@ -591,3 +591,99 @@ footer {
     border-color: rgba(239, 68, 68, 0.2);
     color: #f87171;
 }
+
+/* Payment Methods & Dynamic Elements styling */
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.payment-method-card {
+    transition: var(--transition-smooth);
+    border: 1px solid var(--glass-border);
+}
+
+.payment-method-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.payment-method-card.active {
+    border-color: var(--accent-color) !important;
+    background: rgba(255, 183, 3, 0.05) !important;
+    box-shadow: 0 4px 20px rgba(255, 183, 3, 0.15);
+}
+
+.qty-btn {
+    transition: var(--transition-smooth);
+}
+
+.qty-btn:hover {
+    background: var(--accent-color) !important;
+    color: var(--bg-primary) !important;
+    border-color: var(--accent-color) !important;
+}
+
+.payment-details-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+}
+
+.credit-card-mockup {
+    position: relative;
+    box-shadow: var(--card-shadow);
+}
+
+.credit-card-mockup::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: -30px;
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+}
+
+/* Ghi đè dropdown menu tối thành sáng */
+.dropdown-menu-dark {
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: var(--card-shadow) !important;
+}
+.dropdown-menu-dark .dropdown-item {
+    color: var(--text-main) !important;
+}
+.dropdown-menu-dark .dropdown-item:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+    color: var(--text-main) !important;
+}
+.dropdown-menu-dark .dropdown-divider {
+    border-color: var(--glass-border) !important;
+}
+.dropdown-item i {
+    opacity: 0.8;
+}
+
+/* Đơn hàng CSS bổ sung */
+.order-box {
+    background: var(--bg-secondary) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+}
+.bg-black.bg-opacity-20, .bg-black.bg-opacity-25 {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+}
+.table.text-white {
+    color: var(--text-main) !important;
+}
+.table.text-white td, .table.text-white th {
+    color: var(--text-main) !important;
+}
+.text-white.item-total-display, .text-white.mb-0, .text-white.mb-1, .text-white.d-block {
+    color: var(--text-main) !important;
+}
+.checkout-items .border-bottom {
+    border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+

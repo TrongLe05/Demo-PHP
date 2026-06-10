@@ -44,6 +44,8 @@ erDiagram
         string customer_name
         string customer_phone
         string customer_address
+        string status "Chờ xác nhận, Đã xác nhận, Đang giao, Đã giao, Đã hủy"
+        string payment_method "COD, Ví điện tử, Thẻ tín dụng, QR"
         timestamp created_at
     }
 
@@ -106,6 +108,8 @@ Lưu trữ thông tin về các đơn đặt hàng đã thực hiện.
 | `customer_name` | VARCHAR(100) | NOT NULL | Họ tên người nhận hàng |
 | `customer_phone` | VARCHAR(15) | NOT NULL | Số điện thoại nhận hàng |
 | `customer_address` | TEXT | NOT NULL | Địa chỉ giao nhận hàng |
+| `status` | VARCHAR(50) | NOT NULL DEFAULT 'Chờ xác nhận' | Trạng thái: Chờ xác nhận, Đã xác nhận, Đang giao, Đã giao, Đã hủy |
+| `payment_method` | VARCHAR(50) | NOT NULL DEFAULT 'COD' | Phương thức thanh toán: COD, Ví điện tử, Thẻ tín dụng, QR |
 | `created_at` | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Thời gian tạo đơn hàng |
 
 ### 2.4 Bảng `order_details` (Chi tiết các mặt hàng trong đơn hàng)
@@ -170,6 +174,8 @@ CREATE TABLE orders (
     customer_name VARCHAR(100) NOT NULL,
     customer_phone VARCHAR(15) NOT NULL,
     customer_address TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'Chờ xác nhận',
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'COD',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -228,8 +234,8 @@ INSERT INTO cart (user_id, book_id, quantity) VALUES
 (2, 1, 2);
 
 -- Thêm Đơn hàng mẫu cho Trần Thị B (user_id = 3) đã thanh toán xong
-INSERT INTO orders (user_id, total_price, customer_name, customer_phone, customer_address, created_at) VALUES
-(3, 329000.00, 'Trần Thị B', '0912345678', '123 Đường Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh', '2024-05-15 10:30:00');
+INSERT INTO orders (user_id, total_price, customer_name, customer_phone, customer_address, status, payment_method, created_at) VALUES
+(3, 329000.00, 'Trần Thị B', '0912345678', '123 Đường Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh', 'Đã giao', 'Ví điện tử', '2024-05-15 10:30:00');
 
 -- Thêm Chi tiết cho Đơn hàng trên (order_id = 1)
 INSERT INTO order_details (order_id, book_id, quantity, price) VALUES
