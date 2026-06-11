@@ -15,19 +15,21 @@ if (isset($_POST['cancel_order_id'])) {
     
     // Kiểm tra đơn hàng thuộc quyền sở hữu của user này và ở trạng thái hợp lệ
     global $pdo;
-    $stmt = $pdo->prepare("SELECT user_id, status FROM orders WHERE id = :id");
+    $stmt = $pdo->prepare("SELECT user_id, status, payment_method FROM orders WHERE id = :id");
     $stmt->execute(['id' => $cancel_id]);
     $order_data = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($order_data && (int)$order_data['user_id'] === (int)$user_id) {
-        if ($order_data['status'] === 'Chờ xác nhận' || $order_data['status'] === 'Đã xác nhận') {
+        if ($order_data['payment_method'] === 'PayOS' && $order_data['status'] === 'Đã xác nhận') {
+            $error_message = "Đơn hàng thanh toán qua PayOS đã xác nhận thành công và không thể hủy.";
+        } elseif ($order_data['status'] === 'Chờ thanh toán' || $order_data['status'] === 'Chờ xác nhận' || $order_data['status'] === 'Đã xác nhận') {
             if (cancel_order($cancel_id)) {
                 $success_message = "Đã hủy đơn hàng #{$cancel_id} thành công! Số lượng sách trong kho đã được hoàn lại.";
             } else {
                 $error_message = "Lỗi hệ thống! Không thể hủy đơn hàng vào lúc này.";
             }
         } else {
-            $error_message = "Bạn chỉ có thể hủy đơn hàng khi trạng thái là 'Chờ xác nhận' hoặc 'Đã xác nhận'.";
+            $error_message = "Bạn chỉ có thể hủy đơn hàng khi trạng thái là 'Chờ thanh toán', 'Chờ xác nhận' hoặc 'Đã xác nhận'.";
         }
     } else {
         $error_message = "Đơn hàng không hợp lệ hoặc không thuộc quyền sở hữu của bạn.";
@@ -72,7 +74,9 @@ require_once __DIR__ . '/header.php';
                 <?php foreach ($orders as $order): 
                     // Định nghĩa màu sắc cho badge trạng thái
                     $status_style = 'background: rgba(255, 255, 255, 0.05); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.15);';
-                    if ($order['status'] === 'Chờ xác nhận') {
+                    if ($order['status'] === 'Chờ thanh toán') {
+                        $status_style = 'background: rgba(236, 72, 153, 0.1); color: #f472b6; border: 1px solid rgba(236, 72, 153, 0.25);';
+                    } elseif ($order['status'] === 'Chờ xác nhận') {
                         $status_style = 'background: rgba(255, 183, 3, 0.1); color: #ffb703; border: 1px solid rgba(255, 183, 3, 0.25);';
                     } elseif ($order['status'] === 'Đã xác nhận') {
                         $status_style = 'background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3);';
@@ -92,6 +96,8 @@ require_once __DIR__ . '/header.php';
                         $pm_icon = 'fa-credit-card text-primary';
                     } elseif ($order['payment_method'] === 'QR') {
                         $pm_icon = 'fa-qrcode text-warning';
+                    } elseif ($order['payment_method'] === 'PayOS') {
+                        $pm_icon = 'fa-wallet text-danger';
                     }
                 ?>
                     <div class="glass-panel p-4 mb-4" style="transition: var(--transition-smooth); border: 1px solid var(--glass-border);">
@@ -165,7 +171,7 @@ require_once __DIR__ . '/header.php';
                         <!-- Tổng cộng đơn hàng và nút Hủy đơn -->
                         <div class="d-flex justify-content-between align-items-center mt-3 pt-2 flex-wrap gap-2">
                             <div>
-                                <?php if ($order['status'] === 'Chờ xác nhận' || $order['status'] === 'Đã xác nhận'): ?>
+                                <?php if (($order['status'] === 'Chờ xác nhận' || $order['status'] === 'Đã xác nhận') && !($order['payment_method'] === 'PayOS' && $order['status'] === 'Đã xác nhận')): ?>
                                     <form action="orders.php" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Sách sẽ được hoàn trả vào kho.');" class="d-inline">
                                         <input type="hidden" name="cancel_order_id" value="<?php echo $order['id']; ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-danger px-3 py-1" style="border-radius: 8px; font-weight: 500;">

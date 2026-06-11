@@ -1,6 +1,12 @@
 <?php
 require_once __DIR__ . '/db_helper.php';
 
+// Yêu cầu đăng nhập trước khi xem giỏ hàng
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php?status=login_required");
+    exit;
+}
+
 // Xử lý cập nhật số lượng sách trong giỏ
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_cart'])) {
     if (isset($_POST['quantities']) && is_array($_POST['quantities'])) {

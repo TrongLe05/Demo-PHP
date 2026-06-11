@@ -107,7 +107,7 @@ body {
 
 .nav-link:hover, .nav-link.active {
     color: var(--text-main) !important;
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.04) !important;
 }
 
 .navbar .btn-cart {
@@ -143,7 +143,6 @@ body {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
 
-/* Banner Hero */
 .hero-banner {
     padding: 6rem 0;
     text-align: center;
@@ -151,8 +150,9 @@ body {
     overflow: hidden;
     margin-bottom: 2rem;
     border-radius: 24px;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(18, 21, 38, 0.4) 100%);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.04) 0%, rgba(249, 115, 22, 0.02) 100%);
     border: 1px solid var(--glass-border);
+    box-shadow: var(--card-shadow);
 }
 
 .hero-banner h1 {
@@ -540,11 +540,10 @@ body {
     transform: scale(1.1);
 }
 
-/* Footer styling */
 footer {
     margin-top: auto;
     border-top: 1px solid var(--glass-border);
-    background: rgba(10, 12, 22, 0.9);
+    background: var(--bg-secondary);
     padding: 3rem 0;
     color: var(--text-muted);
 }
@@ -581,15 +580,15 @@ footer {
 }
 
 .alert-success-custom {
-    background: rgba(16, 185, 129, 0.1);
-    border-color: rgba(16, 185, 129, 0.2);
-    color: #34d399;
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.15);
+    color: #065f46; /* Dark green for readable contrast on light bg */
 }
 
 .alert-danger-custom {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.2);
-    color: #f87171;
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.15);
+    color: #991b1b; /* Dark red for readable contrast on light bg */
 }
 
 /* Payment Methods & Dynamic Elements styling */
@@ -685,5 +684,34 @@ footer {
 .checkout-items .border-bottom {
     border-color: rgba(0, 0, 0, 0.05) !important;
 }
+
+/* Sửa lỗi chữ màu trắng chìm trên nền sáng của toàn bộ giao diện */
+.text-white, 
+h1.text-white, 
+h2.text-white, 
+h3.text-white, 
+h4.text-white, 
+h5.text-white, 
+h6.text-white, 
+strong.text-white, 
+span.text-white, 
+td.text-white {
+    color: var(--text-main) !important;
+}
+
+/* Ngoại lệ cho mô phỏng thẻ tín dụng và mã QR có nền sẫm màu */
+.credit-card-mockup, 
+.credit-card-mockup .text-white,
+.credit-card-mockup .card-number-display,
+.credit-card-mockup .card-name-display,
+.credit-card-mockup .card-expiry-display {
+    color: #ffffff !important;
+}
+
+.qr-mockup-wrapper svg {
+    display: block;
+    margin: 0 auto;
+}
+
 
 

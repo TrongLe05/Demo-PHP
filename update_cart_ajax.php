@@ -2,6 +2,15 @@
 header('Content-Type: application/json');
 require_once __DIR__ . '/db_helper.php';
 
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Bạn cần đăng nhập trước khi thực hiện thao tác này.'
+    ]);
+    exit;
+}
+
 // Chỉ nhận yêu cầu POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode([
@@ -80,6 +89,7 @@ echo json_encode([
     'message' => 'Cập nhật giỏ hàng thành công.',
     'item_subtotal' => number_format($item_subtotal, 0, ',', '.') . ' đ',
     'total_price' => number_format($total_price, 0, ',', '.') . ' đ',
+    'total_price_raw' => $total_price,
     'cart_count' => $cart_count
 ]);
 exit;

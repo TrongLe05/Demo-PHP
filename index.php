@@ -1,6 +1,40 @@
 <?php
 require_once __DIR__ . '/db_helper.php';
 
+// Yêu cầu đăng nhập trước khi thực hiện mua hàng hoặc thêm vào giỏ hàng
+if (isset($_GET['buy_now']) || isset($_GET['add_to_cart'])) {
+    if (!isset($_SESSION['user_id'])) {
+        header("Location: login.php?status=login_required");
+        exit;
+    }
+}
+
+// Xử lý Mua ngay (Buy Now)
+if (isset($_GET['buy_now'])) {
+    $book_id = (int)$_GET['buy_now'];
+    $book = get_book_by_id($book_id);
+    
+    if ($book) {
+        if (!isset($_SESSION['cart'])) {
+            $_SESSION['cart'] = [];
+        }
+        
+        if (isset($_SESSION['cart'][$book_id])) {
+            $_SESSION['cart'][$book_id]++;
+        } else {
+            $_SESSION['cart'][$book_id] = 1;
+        }
+        
+        // Đồng bộ giỏ hàng vào CSDL nếu đã đăng nhập
+        if (isset($_SESSION['user_id'])) {
+            sync_session_to_db_cart($_SESSION['user_id']);
+        }
+        
+        header("Location: checkout.php");
+        exit;
+    }
+}
+
 // Xử lý thêm vào giỏ hàng (Add to Cart)
 if (isset($_GET['add_to_cart'])) {
     $book_id = (int)$_GET['add_to_cart'];
@@ -145,11 +179,11 @@ require_once __DIR__ . '/header.php';
 
     <!-- PHẦN 1: SÁCH NỔI BẬT (Chỉ hiển thị ở trang chủ mặc định) -->
     <?php if ($search_query === '' && $category_filter === '' && !empty($featured_books)): ?>
-        <div class="mb-5">
+        <div class="mb-5" id="featured-section">
             <h2 class="section-title">Sách Nổi Bật</h2>
             <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                 <?php foreach ($featured_books as $book): ?>
-                    <div class="col">
+                    <div class="col book-item-column featured-item" data-title="<?php echo htmlspecialchars($book['title']); ?>" data-author="<?php echo htmlspecialchars($book['author']); ?>">
                         <div class="glass-panel glass-panel-hover book-card">
                             <div class="book-featured-tag">Nổi bật</div>
                             <div class="book-img-wrapper">
@@ -161,11 +195,14 @@ require_once __DIR__ . '/header.php';
                                     <a href="book-detail.php?id=<?php echo $book['id']; ?>"><?php echo htmlspecialchars($book['title']); ?></a>
                                 </h4>
                                 <p class="book-author">Tác giả: <?php echo htmlspecialchars($book['author']); ?></p>
-                                <div class="book-price-row">
+                                <div class="book-price-row align-items-center">
                                     <span class="book-price"><?php echo number_format($book['price'], 0, ',', '.'); ?> đ</span>
-                                    <a href="index.php?add_to_cart=<?php echo $book['id']; ?>" class="btn-add-cart" title="Thêm vào giỏ hàng">
-                                        <i class="fas fa-plus"></i>
-                                    </a>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <a href="index.php?buy_now=<?php echo $book['id']; ?>" class="btn btn-sm btn-warning py-1 px-3 text-dark font-weight-600" style="border-radius: 20px; font-size: 0.75rem; transition: var(--transition-smooth);" title="Mua ngay">Mua ngay</a>
+                                        <a href="index.php?add_to_cart=<?php echo $book['id']; ?>" class="btn-add-cart" title="Thêm vào giỏ hàng">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -187,6 +224,12 @@ require_once __DIR__ . '/header.php';
             ?>
         </h2>
 
+        <!-- Trình giữ chỗ khi tìm kiếm real-time không ra kết quả -->
+        <div id="no-results-placeholder" class="glass-panel text-center p-5 my-4 d-none">
+            <i class="fas fa-book-dead text-muted fa-3x mb-3"></i>
+            <p class="text-muted mb-0">Không tìm thấy cuốn sách nào phù hợp với tìm kiếm của bạn.</p>
+        </div>
+
         <?php if (empty($filtered_books)): ?>
             <div class="glass-panel text-center p-5 my-4">
                 <i class="fas fa-book-dead text-muted fa-3x mb-3"></i>
@@ -194,9 +237,9 @@ require_once __DIR__ . '/header.php';
                 <a href="index.php" class="btn btn-primary-custom mt-3">Quay lại trang chủ</a>
             </div>
         <?php else: ?>
-            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+            <div id="all-books-grid" class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
                 <?php foreach ($filtered_books as $book): ?>
-                    <div class="col">
+                    <div class="col book-item-column" data-title="<?php echo htmlspecialchars($book['title']); ?>" data-author="<?php echo htmlspecialchars($book['author']); ?>">
                         <div class="glass-panel glass-panel-hover book-card">
                             <div class="book-img-wrapper">
                                 <img src="<?php echo htmlspecialchars($book['image']); ?>" class="book-img" alt="<?php echo htmlspecialchars($book['title']); ?>">
@@ -207,23 +250,94 @@ require_once __DIR__ . '/header.php';
                                     <a href="book-detail.php?id=<?php echo $book['id']; ?>"><?php echo htmlspecialchars($book['title']); ?></a>
                                 </h4>
                                 <p class="book-author">Tác giả: <?php echo htmlspecialchars($book['author']); ?></p>
-                                <div class="book-price-row">
+                                <div class="book-price-row align-items-center">
                                     <span class="book-price"><?php echo number_format($book['price'], 0, ',', '.'); ?> đ</span>
-                                    <a href="index.php?add_to_cart=<?php echo $book['id']; ?><?php 
-                                        if ($category_filter) echo '&category=' . urlencode($category_filter);
-                                        if ($search_query) echo '&search=' . urlencode($search_query);
-                                    ?>" class="btn-add-cart" title="Thêm vào giỏ hàng">
-                                        <i class="fas fa-plus"></i>
-                                    </a>
+                                    <div class="d-flex gap-2 align-items-center">
+                                        <a href="index.php?buy_now=<?php echo $book['id']; ?>" class="btn btn-sm btn-warning py-1 px-3 text-dark font-weight-600" style="border-radius: 20px; font-size: 0.75rem; transition: var(--transition-smooth);" title="Mua ngay">Mua ngay</a>
+                                        <a href="index.php?add_to_cart=<?php echo $book['id']; ?><?php 
+                                            if ($category_filter) echo '&category=' . urlencode($category_filter);
+                                            if ($search_query) echo '&search=' . urlencode($search_query);
+                                        ?>" class="btn-add-cart" title="Thêm vào giỏ hàng">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 <?php endforeach; ?>
-            </div>
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInputs = document.querySelectorAll('.search-input');
+    const bookColumns = document.querySelectorAll('.book-item-column');
+    const noResultsPlaceholder = document.getElementById('no-results-placeholder');
+    const featuredSection = document.getElementById('featured-section');
+    const allBooksGrid = document.getElementById('all-books-grid');
+    
+    searchInputs.forEach(input => {
+        input.addEventListener('input', function(e) {
+            const query = e.target.value.trim().toLowerCase();
+            
+            // Đồng bộ giá trị giữa các ô tìm kiếm
+            searchInputs.forEach(otherInput => {
+                if (otherInput !== input) {
+                    otherInput.value = e.target.value;
+                }
+            });
+            
+            let visibleCount = 0;
+            let featuredVisibleCount = 0;
+            
+            bookColumns.forEach(col => {
+                const title = col.getAttribute('data-title').toLowerCase();
+                const author = col.getAttribute('data-author').toLowerCase();
+                const isFeatured = col.classList.contains('featured-item');
+                
+                if (title.includes(query) || author.includes(query)) {
+                    col.style.display = '';
+                    if (isFeatured) {
+                        featuredVisibleCount++;
+                    } else {
+                        visibleCount++;
+                    }
+                } else {
+                    col.style.display = 'none';
+                }
+            });
+            
+            // Ẩn tiêu đề/section sách nổi bật nếu không có sản phẩm nổi bật nào khớp
+            if (featuredSection) {
+                if (query !== '' && featuredVisibleCount === 0) {
+                    featuredSection.style.display = 'none';
+                } else {
+                    featuredSection.style.display = '';
+                }
+            }
+            
+            // Xử lý thông báo trống cho danh sách tất cả sách
+            if (visibleCount === 0 && (featuredSection ? featuredVisibleCount === 0 : true)) {
+                if (noResultsPlaceholder) noResultsPlaceholder.classList.remove('d-none');
+                if (allBooksGrid) allBooksGrid.classList.add('d-none');
+            } else {
+                if (noResultsPlaceholder) noResultsPlaceholder.classList.add('d-none');
+                if (allBooksGrid) allBooksGrid.classList.remove('d-none');
+            }
+        });
+        
+        // Chặn submit form khi bấm Enter để không bị load lại trang
+        const form = input.closest('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+            });
+        }
+    });
+});
+</script>
 
 <?php
 require_once __DIR__ . '/footer.php';

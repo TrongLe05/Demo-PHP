@@ -16,21 +16,32 @@ if ($action === 'update_status' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $order_id = isset($_POST['order_id']) ? (int)$_POST['order_id'] : 0;
     $status = trim($_POST['status'] ?? '');
     
-    $valid_statuses = ['Chờ xác nhận', 'Đã xác nhận', 'Đang giao', 'Đã giao', 'Đã hủy'];
+    $valid_statuses = ['Chờ thanh toán', 'Chờ xác nhận', 'Đã xác nhận', 'Đang giao', 'Đã giao', 'Đã hủy'];
     if ($order_id > 0 && in_array($status, $valid_statuses)) {
-        $success = false;
-        if ($status === 'Đã hủy') {
-            $success = cancel_order($order_id);
-        } else {
-            $success = update_order_status($order_id, $status);
-        }
+        // Kiểm tra đơn hàng có thanh toán qua PayOS và đã xác nhận không
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT status, payment_method FROM orders WHERE id = :id");
+        $stmt->execute(['id' => $order_id]);
+        $order_data = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($success) {
-            header("Location: admin.php?action=orders&status=status_updated");
-            exit;
-        } else {
-            $errors['global'] = 'Lỗi hệ thống! Không thể cập nhật trạng thái đơn hàng.';
+        if ($order_data && $order_data['payment_method'] === 'PayOS' && $order_data['status'] === 'Đã xác nhận' && $status === 'Đã hủy') {
+            $errors['global'] = 'Đơn hàng thanh toán qua PayOS đã được xác nhận, không thể hủy.';
             $action = 'orders';
+        } else {
+            $success = false;
+            if ($status === 'Đã hủy') {
+                $success = cancel_order($order_id);
+            } else {
+                $success = update_order_status($order_id, $status);
+            }
+            
+            if ($success) {
+                header("Location: admin.php?action=orders&status=status_updated");
+                exit;
+            } else {
+                $errors['global'] = 'Lỗi hệ thống! Không thể cập nhật trạng thái đơn hàng.';
+                $action = 'orders';
+            }
         }
     } else {
         $errors['global'] = 'Dữ liệu không hợp lệ.';
@@ -385,6 +396,7 @@ require_once __DIR__ . '/header.php';
                                     if ($order['payment_method'] === 'Ví điện tử') $pm_icon = 'fa-wallet text-info';
                                     elseif ($order['payment_method'] === 'Thẻ tín dụng') $pm_icon = 'fa-credit-card text-primary';
                                     elseif ($order['payment_method'] === 'QR') $pm_icon = 'fa-qrcode text-warning';
+                                    elseif ($order['payment_method'] === 'PayOS') $pm_icon = 'fa-wallet text-danger';
                                     ?>
                                     <i class="fas <?php echo $pm_icon; ?> me-1"></i>
                                     <?php echo htmlspecialchars($order['payment_method']); ?>
@@ -394,7 +406,8 @@ require_once __DIR__ . '/header.php';
                                 <span class="text-muted d-block" style="font-size: 0.85rem;">Trạng thái hiện tại:</span>
                                 <?php 
                                 $badge_class = 'bg-secondary';
-                                if ($order['status'] === 'Chờ xác nhận') $badge_class = 'bg-warning text-dark';
+                                if ($order['status'] === 'Chờ thanh toán') $badge_class = 'bg-dark text-white border border-secondary';
+                                elseif ($order['status'] === 'Chờ xác nhận') $badge_class = 'bg-warning text-dark';
                                 elseif ($order['status'] === 'Đã xác nhận') $badge_class = 'bg-primary';
                                 elseif ($order['status'] === 'Đang giao') $badge_class = 'bg-info text-dark';
                                 elseif ($order['status'] === 'Đã giao') $badge_class = 'bg-success';
@@ -410,7 +423,12 @@ require_once __DIR__ . '/header.php';
                                     $next_btn_class = 'btn-primary-custom';
                                     $next_icon = 'fa-check';
                                     
-                                    if ($order['status'] === 'Chờ xác nhận') {
+                                    if ($order['status'] === 'Chờ thanh toán') {
+                                        $next_status = 'Chờ xác nhận';
+                                        $next_label = 'Xác nhận đã thanh toán';
+                                        $next_btn_class = 'btn-warning text-dark';
+                                        $next_icon = 'fa-money-bill-wave';
+                                    } elseif ($order['status'] === 'Chờ xác nhận') {
                                         $next_status = 'Đã xác nhận';
                                         $next_label = 'Xác nhận đơn hàng';
                                         $next_btn_class = 'btn-primary-custom';
@@ -438,6 +456,7 @@ require_once __DIR__ . '/header.php';
                                         </form>
                                     <?php endif; ?>
 
+                                    <?php if (!($order['payment_method'] === 'PayOS' && $order['status'] === 'Đã xác nhận')): ?>
                                     <form action="admin.php?action=update_status" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Sách sẽ được hoàn trả vào kho.');" class="d-inline">
                                         <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
                                         <input type="hidden" name="status" value="Đã hủy">
@@ -445,6 +464,7 @@ require_once __DIR__ . '/header.php';
                                             <i class="fas fa-times me-1"></i> Hủy đơn hàng
                                         </button>
                                     </form>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <span class="text-muted" style="font-size: 0.9rem;"><i class="fas fa-info-circle me-1"></i>Đơn hàng đã hoàn thành hoặc đã hủy.</span>
                                 <?php endif; ?>

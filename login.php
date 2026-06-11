@@ -64,6 +64,11 @@ require_once __DIR__ . '/header.php';
                 <i class="fas fa-exclamation-triangle"></i>
                 <span>Bạn cần đăng nhập bằng quyền Admin để truy cập trang đó.</span>
             </div>
+        <?php elseif (isset($_GET['status']) && $_GET['status'] == 'login_required'): ?>
+            <div class="alert alert-custom alert-danger-custom d-flex align-items-center gap-2 mb-3">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Bạn cần đăng nhập tài khoản trước khi thực hiện mua sách hoặc thêm vào giỏ hàng.</span>
+            </div>
         <?php endif; ?>
         
         <?php if (isset($errors['global'])): ?>

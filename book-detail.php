@@ -9,8 +9,12 @@ if (!$book) {
     exit;
 }
 
-// Xử lý thêm vào giỏ hàng riêng tại trang chi tiết
-if (isset($_POST['add_to_cart_btn'])) {
+// Xử lý thêm vào giỏ hàng hoặc mua ngay tại trang chi tiết
+if (isset($_POST['add_to_cart_btn']) || isset($_POST['buy_now_btn'])) {
+    if (!isset($_SESSION['user_id'])) {
+        header("Location: login.php?status=login_required");
+        exit;
+    }
     $qty = isset($_POST['quantity']) ? (int)$_POST['quantity'] : 1;
     if ($qty <= 0) $qty = 1;
     
@@ -34,7 +38,11 @@ if (isset($_POST['add_to_cart_btn'])) {
         sync_session_to_db_cart($_SESSION['user_id']);
     }
     
-    header("Location: book-detail.php?id=" . $book_id . "&status=added");
+    if (isset($_POST['buy_now_btn'])) {
+        header("Location: checkout.php");
+    } else {
+        header("Location: book-detail.php?id=" . $book_id . "&status=added");
+    }
     exit;
 }
 
@@ -101,8 +109,11 @@ require_once __DIR__ . '/header.php';
                             <input type="number" id="quantity" name="quantity" class="form-control-custom text-center" style="width: 80px;" value="1" min="1" max="<?php echo $book['quantity']; ?>">
                         </div>
                         
-                        <button type="submit" name="add_to_cart_btn" class="btn btn-primary-custom px-4 py-3">
-                            <i class="fas fa-cart-plus"></i> Thêm vào giỏ hàng
+                        <button type="submit" name="add_to_cart_btn" class="btn btn-secondary-custom px-4 py-3">
+                            <i class="fas fa-cart-plus me-1"></i> Thêm vào giỏ hàng
+                        </button>
+                        <button type="submit" name="buy_now_btn" class="btn btn-primary-custom px-4 py-3">
+                            <i class="fas fa-bolt me-1"></i> Mua ngay
                         </button>
                     </form>
                 <?php else: ?>

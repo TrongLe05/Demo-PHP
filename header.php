@@ -68,11 +68,13 @@ foreach ($all_books as $book) {
                 </ul>
                 
                 <div class="d-flex align-items-center gap-3">
-                    <!-- Giỏ hàng -->
-                    <a href="cart.php" class="btn btn-cart">
-                        <i class="fas fa-shopping-basket"></i> Giỏ hàng
-                        <span class="cart-badge"><?php echo get_cart_count(); ?></span>
-                    </a>
+                    <!-- Giỏ hàng (chỉ hiển thị cho khách hàng, ẩn đối với admin) -->
+                    <?php if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin'): ?>
+                        <a href="cart.php" class="btn btn-cart">
+                            <i class="fas fa-shopping-basket"></i> Giỏ hàng
+                            <span class="cart-badge"><?php echo get_cart_count(); ?></span>
+                        </a>
+                    <?php endif; ?>
 
                     <!-- Tài khoản -->
                     <?php if (isset($_SESSION['user_id'])): ?>

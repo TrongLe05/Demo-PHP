@@ -1,442 +1,717 @@
 <?php
 // =========================================================================
-// CẤU HÌNH KẾT NỐI DATABASE MYSQL
+// CONFIGURATION & DATABASE CONNECTIVITY (SOLID: Single Responsibility)
 // =========================================================================
 define('DB_HOST', '127.0.0.1');
 define('DB_NAME', 'ban_sach_online');
 define('DB_USER', 'root');
 define('DB_PASS', ''); // Mặc định XAMPP trống
 
-try {
-    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    
-    // Tự động kiểm tra và nâng cấp cấu trúc bảng orders nếu cần
-    try {
-        $stmt_status = $pdo->query("SHOW COLUMNS FROM orders LIKE 'status'");
-        if (!$stmt_status->fetch()) {
-            $pdo->exec("ALTER TABLE orders ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Chờ xác nhận'");
-        }
-        $stmt_pm = $pdo->query("SHOW COLUMNS FROM orders LIKE 'payment_method'");
-        if (!$stmt_pm->fetch()) {
-            $pdo->exec("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(50) NOT NULL DEFAULT 'COD'");
-        }
-    } catch (PDOException $e) {
-        // Bỏ qua lỗi nếu bảng chưa tồn tại
+// =========================================================================
+// ENVIRONMENT CONFIGURATION LOADER (SOLID: Single Responsibility)
+// =========================================================================
+function load_env_file(string $filePath): void {
+    if (!file_exists($filePath)) {
+        return;
     }
-} catch (PDOException $e) {
-    die("Kết nối CSDL MySQL thất bại: " . $e->getMessage());
+    $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || strpos($line, '#') === 0) {
+            continue;
+        }
+        $parts = explode('=', $line, 2);
+        if (count($parts) === 2) {
+            $key = trim($parts[0]);
+            $value = trim($parts[1]);
+            $value = trim($value, '"\'');
+            if (getenv($key) === false) {
+                putenv("$key=$value");
+            }
+            $_ENV[$key] = $value;
+        }
+    }
 }
 
-// Khởi động session nếu chưa có
+// Tải tệp cấu hình .env
+load_env_file(__DIR__ . '/.env');
+
+define('PAYOS_CLIENT_ID', getenv('PAYOS_CLIENT_ID') ?: 'your_client_id');
+define('PAYOS_API_KEY', getenv('PAYOS_API_KEY') ?: 'your_api_key');
+define('PAYOS_CHECKSUM_KEY', getenv('PAYOS_CHECKSUM_KEY') ?: 'your_checksum_key');
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
 /**
- * Đọc danh sách sách từ MySQL
+ * Interface DatabaseConnectionInterface
+ * Tuân thủ Dependency Inversion Principle (DIP)
  */
-function get_books() {
-    global $pdo;
-    try {
-        $stmt = $pdo->query("SELECT * FROM books ORDER BY id DESC");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        return [];
-    }
+interface DatabaseConnectionInterface {
+    public function getConnection(): PDO;
 }
 
 /**
- * Lấy thông tin một cuốn sách theo ID
+ * Class DatabaseConnection
+ * Tuân thủ Single Responsibility Principle (SRP) - Chỉ chịu trách nhiệm kết nối và kiểm tra CSDL
  */
-function get_book_by_id($id) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM books WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    } catch (PDOException $e) {
-        return null;
-    }
-}
+class DatabaseConnection implements DatabaseConnectionInterface {
+    private ?PDO $pdo = null;
 
-/**
- * Thêm một cuốn sách mới (Admin)
- */
-function add_book($title, $author, $category, $price, $image, $description, $featured = 0, $quantity = 10) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("INSERT INTO books (title, author, category, price, image, description, featured, quantity) VALUES (:title, :author, :category, :price, :image, :description, :featured, :quantity)");
-        return $stmt->execute([
-            'title' => $title,
-            'author' => $author,
-            'category' => $category,
-            'price' => (float)$price,
-            'image' => $image ? $image : 'dac_nhan_tam.jpg',
-            'description' => $description,
-            'featured' => (int)$featured,
-            'quantity' => (int)$quantity
-        ]);
-    } catch (PDOException $e) {
-        return false;
-    }
-}
-
-/**
- * Cập nhật thông tin sách (Admin)
- */
-function update_book($id, $title, $author, $category, $price, $image, $description, $featured = 0, $quantity = 10) {
-    global $pdo;
-    try {
-        $sql = "UPDATE books SET title = :title, author = :author, category = :category, price = :price, description = :description, featured = :featured, quantity = :quantity";
-        $params = [
-            'title' => $title,
-            'author' => $author,
-            'category' => $category,
-            'price' => (float)$price,
-            'description' => $description,
-            'featured' => (int)$featured,
-            'quantity' => (int)$quantity,
-            'id' => (int)$id
-        ];
-        if ($image) {
-            $sql .= ", image = :image";
-            $params['image'] = $image;
+    public function getConnection(): PDO {
+        if ($this->pdo === null) {
+            try {
+                $this->pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4", DB_USER, DB_PASS);
+                $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                
+                // Tự động kiểm tra di trú cấu trúc bảng
+                $this->runMigrations();
+            } catch (PDOException $e) {
+                die("Kết nối CSDL MySQL thất bại: " . $e->getMessage());
+            }
         }
-        $sql .= " WHERE id = :id";
-        $stmt = $pdo->prepare($sql);
-        return $stmt->execute($params);
-    } catch (PDOException $e) {
-        return false;
+        return $this->pdo;
+    }
+
+    private function runMigrations(): void {
+        try {
+            $stmt_status = $this->pdo->query("SHOW COLUMNS FROM orders LIKE 'status'");
+            if (!$stmt_status->fetch()) {
+                $this->pdo->exec("ALTER TABLE orders ADD COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Chờ xác nhận'");
+            }
+            $stmt_pm = $this->pdo->query("SHOW COLUMNS FROM orders LIKE 'payment_method'");
+            if (!$stmt_pm->fetch()) {
+                $this->pdo->exec("ALTER TABLE orders ADD COLUMN payment_method VARCHAR(50) NOT NULL DEFAULT 'COD'");
+            }
+        } catch (PDOException $e) {
+            // Bỏ qua nếu bảng chưa được tạo
+        }
     }
 }
 
-/**
- * Xóa một cuốn sách (Admin)
- */
-function delete_book($id) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("DELETE FROM books WHERE id = :id");
-        return $stmt->execute(['id' => $id]);
-    } catch (PDOException $e) {
-        return false;
-    }
-}
+// Khởi tạo instance kết nối dùng chung
+$dbConnectionManager = new DatabaseConnection();
+$pdo = $dbConnectionManager->getConnection(); // Khai báo biến toàn cục tương thích ngược
 
 /**
- * Đọc danh sách người dùng từ MySQL
+ * Class BookRepository
+ * Tuân thủ SRP - Chỉ quản lý các thao tác liên quan đến Sách
  */
-function get_users() {
-    global $pdo;
-    try {
-        $stmt = $pdo->query("SELECT * FROM users ORDER BY id DESC");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (PDOException $e) {
-        return [];
-    }
-}
+class BookRepository {
+    private PDO $db;
 
-/**
- * Lấy thông tin người dùng theo email
- */
-function get_user_by_email($email) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email");
-        $stmt->execute(['email' => trim($email)]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    } catch (PDOException $e) {
-        return null;
+    public function __construct(DatabaseConnectionInterface $connectionManager) {
+        $this->db = $connectionManager->getConnection();
     }
-}
 
-/**
- * Lấy thông tin người dùng theo tên đăng nhập (Username)
- */
-function get_user_by_username($username) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :username");
-        $stmt->execute(['username' => trim($username)]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    } catch (PDOException $e) {
-        return null;
+    public function getAllBooks(): array {
+        try {
+            $stmt = $this->db->query("SELECT * FROM books ORDER BY id DESC");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
     }
-}
 
-/**
- * Đăng ký người dùng mới
- */
-function register_user($username, $fullname, $email, $password) {
-    global $pdo;
-    try {
-        // Kiểm tra trùng email hoặc trùng username
-        if (get_user_by_email($email) !== null || get_user_by_username($username) !== null) {
+    public function getBookById(int $id): ?array {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM books WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (PDOException $e) {
+            return null;
+        }
+    }
+
+    public function add(string $title, string $author, string $category, float $price, ?string $image, string $description, int $featured = 0, int $quantity = 10): bool {
+        try {
+            $stmt = $this->db->prepare("INSERT INTO books (title, author, category, price, image, description, featured, quantity) VALUES (:title, :author, :category, :price, :image, :description, :featured, :quantity)");
+            return $stmt->execute([
+                'title' => $title,
+                'author' => $author,
+                'category' => $category,
+                'price' => $price,
+                'image' => $image ?: 'dac_nhan_tam.jpg',
+                'description' => $description,
+                'featured' => $featured,
+                'quantity' => $quantity
+            ]);
+        } catch (PDOException $e) {
             return false;
         }
-        
-        $stmt = $pdo->prepare("INSERT INTO users (username, fullname, email, password, role) VALUES (:username, :fullname, :email, :password, 'user')");
-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $success = $stmt->execute([
-            'username' => trim($username),
-            'fullname' => $fullname,
-            'email' => trim($email),
-            'password' => $hashedPassword
-        ]);
-        
-        if ($success) {
-            $userId = $pdo->lastInsertId();
-            return [
-                'id' => $userId,
+    }
+
+    public function update(int $id, string $title, string $author, string $category, float $price, ?string $image, string $description, int $featured = 0, int $quantity = 10): bool {
+        try {
+            $sql = "UPDATE books SET title = :title, author = :author, category = :category, price = :price, description = :description, featured = :featured, quantity = :quantity";
+            $params = [
+                'title' => $title,
+                'author' => $author,
+                'category' => $category,
+                'price' => $price,
+                'description' => $description,
+                'featured' => $featured,
+                'quantity' => $quantity,
+                'id' => $id
+            ];
+            if ($image) {
+                $sql .= ", image = :image";
+                $params['image'] = $image;
+            }
+            $sql .= " WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    public function delete(int $id): bool {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM books WHERE id = :id");
+            return $stmt->execute(['id' => $id]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+}
+
+/**
+ * Class UserRepository
+ * Tuân thủ SRP - Chỉ quản lý người dùng và xác thực
+ */
+class UserRepository {
+    private PDO $db;
+
+    public function __construct(DatabaseConnectionInterface $connectionManager) {
+        $this->db = $connectionManager->getConnection();
+    }
+
+    public function getAllUsers(): array {
+        try {
+            $stmt = $this->db->query("SELECT * FROM users ORDER BY id DESC");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    public function getByEmail(string $email): ?array {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM users WHERE email = :email");
+            $stmt->execute(['email' => trim($email)]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (PDOException $e) {
+            return null;
+        }
+    }
+
+    public function getByUsername(string $username): ?array {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM users WHERE username = :username");
+            $stmt->execute(['username' => trim($username)]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (PDOException $e) {
+            return null;
+        }
+    }
+
+    public function register(string $username, string $fullname, string $email, string $password): array|bool {
+        try {
+            if ($this->getByEmail($email) !== null || $this->getByUsername($username) !== null) {
+                return false;
+            }
+            
+            $stmt = $this->db->prepare("INSERT INTO users (username, fullname, email, password, role) VALUES (:username, :fullname, :email, :password, 'user')");
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $success = $stmt->execute([
                 'username' => trim($username),
                 'fullname' => $fullname,
                 'email' => trim($email),
-                'role' => 'user'
-            ];
-        }
-        return false;
-    } catch (PDOException $e) {
-        return false;
-    }
-}
-
-/**
- * Đọc danh sách đơn hàng từ MySQL
- */
-function get_orders() {
-    global $pdo;
-    try {
-        $stmt = $pdo->query("SELECT * FROM orders ORDER BY id ASC");
-        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        foreach ($orders as &$order) {
-            $stmt_details = $pdo->prepare("
-                SELECT od.book_id, od.quantity, od.price, b.title 
-                FROM order_details od
-                JOIN books b ON od.book_id = b.id
-                WHERE od.order_id = :order_id
-            ");
-            $stmt_details->execute(['order_id' => $order['id']]);
-            $order['items'] = $stmt_details->fetchAll(PDO::FETCH_ASSOC);
-        }
-        return $orders;
-    } catch (PDOException $e) {
-        return [];
-    }
-}
-
-/**
- * Lưu đơn hàng mới vào CSDL (sử dụng Transaction)
- */
-function save_order($customer_name, $customer_phone, $customer_address, $cart_items, $total_price, $payment_method = 'COD') {
-    global $pdo;
-    try {
-        $pdo->beginTransaction();
-        
-        // CSDL.txt định nghĩa user_id là NOT NULL. 
-        // Nếu không có user đăng nhập, mặc định gán cho user_id = 2 (Nguyễn Văn A - Tài khoản user mẫu)
-        $user_id = isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 2;
-        
-        $stmt = $pdo->prepare("INSERT INTO orders (user_id, total_price, customer_name, customer_phone, customer_address, payment_method) VALUES (:user_id, :total_price, :customer_name, :customer_phone, :customer_address, :payment_method)");
-        $stmt->execute([
-            'user_id' => $user_id,
-            'total_price' => $total_price,
-            'customer_name' => $customer_name,
-            'customer_phone' => $customer_phone,
-            'customer_address' => $customer_address,
-            'payment_method' => $payment_method
-        ]);
-        
-        $order_id = $pdo->lastInsertId();
-        
-        // Thêm chi tiết đơn hàng và Trừ kho
-        $stmt_detail = $pdo->prepare("INSERT INTO order_details (order_id, book_id, quantity, price) VALUES (:order_id, :book_id, :quantity, :price)");
-        $stmt_update_qty = $pdo->prepare("UPDATE books SET quantity = quantity - :qty WHERE id = :book_id");
-        foreach ($cart_items as $item) {
-            // Lưu chi tiết
-            $stmt_detail->execute([
-                'order_id' => $order_id,
-                'book_id' => $item['book_id'],
-                'quantity' => $item['quantity'],
-                'price' => $item['price']
+                'password' => $hashedPassword
             ]);
-            // Trừ số lượng sách tồn kho
-            $stmt_update_qty->execute([
-                'qty' => $item['quantity'],
-                'book_id' => $item['book_id']
-            ]);
-        }
-        
-        // Xóa giỏ hàng trong DB của user này nếu đã đăng nhập
-        if (isset($_SESSION['user_id'])) {
-            $stmt_clear_cart = $pdo->prepare("DELETE FROM cart WHERE user_id = :user_id");
-            $stmt_clear_cart->execute(['user_id' => $_SESSION['user_id']]);
-        }
-        
-        $pdo->commit();
-        return true;
-    } catch (PDOException $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        return false;
-    }
-}
-
-/**
- * Lấy giỏ hàng hiện tại (số lượng sản phẩm)
- */
-function get_cart_count() {
-    $count = 0;
-    if (isset($_SESSION['cart'])) {
-        foreach ($_SESSION['cart'] as $qty) {
-            $count += $qty;
-        }
-    }
-    return $count;
-}
-
-/**
- * Đồng bộ giỏ hàng từ MySQL vào Session khi đăng nhập
- */
-function sync_db_cart_to_session($user_id) {
-    global $pdo;
-    if (!isset($_SESSION['cart'])) {
-        $_SESSION['cart'] = [];
-    }
-    try {
-        $stmt = $pdo->prepare("SELECT book_id, quantity FROM cart WHERE user_id = :user_id");
-        $stmt->execute(['user_id' => $user_id]);
-        $cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        foreach ($cart_items as $item) {
-            $_SESSION['cart'][$item['book_id']] = (int)$item['quantity'];
-        }
-    } catch (PDOException $e) {
-        // Bỏ qua lỗi
-    }
-}
-
-/**
- * Đồng bộ giỏ hàng từ Session vào MySQL khi giỏ hàng thay đổi
- */
-function sync_session_to_db_cart($user_id) {
-    global $pdo;
-    try {
-        $pdo->beginTransaction();
-        
-        // Xóa giỏ hàng cũ trong DB
-        $stmt_delete = $pdo->prepare("DELETE FROM cart WHERE user_id = :user_id");
-        $stmt_delete->execute(['user_id' => $user_id]);
-        
-        // Thêm các mặt hàng hiện tại trong session vào DB
-        if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
-            $stmt_insert = $pdo->prepare("INSERT INTO cart (user_id, book_id, quantity) VALUES (:user_id, :book_id, :quantity)");
-            foreach ($_SESSION['cart'] as $book_id => $qty) {
-                if ($qty > 0) {
-                    $stmt_insert->execute([
-                        'user_id' => $user_id,
-                        'book_id' => $book_id,
-                        'quantity' => $qty
-                    ]);
-                }
+            
+            if ($success) {
+                return [
+                    'id' => $this->db->lastInsertId(),
+                    'username' => trim($username),
+                    'fullname' => $fullname,
+                    'email' => trim($email),
+                    'role' => 'user'
+                ];
             }
-        }
-        
-        $pdo->commit();
-    } catch (PDOException $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-    }
-}
-
-/**
- * Cập nhật trạng thái đơn hàng (Admin)
- */
-function update_order_status($order_id, $status) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("UPDATE orders SET status = :status WHERE id = :id");
-        return $stmt->execute([
-            'status' => $status,
-            'id' => (int)$order_id
-        ]);
-    } catch (PDOException $e) {
-        return false;
-    }
-}
-
-/**
- * Lấy danh sách đơn hàng của một người dùng cụ thể
- */
-function get_orders_by_user($user_id) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("SELECT * FROM orders WHERE user_id = :user_id ORDER BY id DESC");
-        $stmt->execute(['user_id' => (int)$user_id]);
-        $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        foreach ($orders as &$order) {
-            $stmt_details = $pdo->prepare("
-                SELECT od.book_id, od.quantity, od.price, b.title, b.image
-                FROM order_details od
-                JOIN books b ON od.book_id = b.id
-                WHERE od.order_id = :order_id
-            ");
-            $stmt_details->execute(['order_id' => $order['id']]);
-            $order['items'] = $stmt_details->fetchAll(PDO::FETCH_ASSOC);
-        }
-        return $orders;
-    } catch (PDOException $e) {
-        return [];
-    }
-}
-
-/**
- * Hủy đơn hàng và hoàn trả số lượng tồn kho (Admin & Khách hàng)
- */
-function cancel_order($order_id) {
-    global $pdo;
-    try {
-        $pdo->beginTransaction();
-        
-        // 1. Kiểm tra trạng thái hiện tại
-        $stmt = $pdo->prepare("SELECT status FROM orders WHERE id = :id");
-        $stmt->execute(['id' => (int)$order_id]);
-        $order = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$order || $order['status'] === 'Đã hủy') {
-            $pdo->rollBack();
+            return false;
+        } catch (PDOException $e) {
             return false;
         }
-        
-        // 2. Cập nhật trạng thái thành Đã hủy
-        $stmt_update = $pdo->prepare("UPDATE orders SET status = 'Đã hủy' WHERE id = :id");
-        $stmt_update->execute(['id' => (int)$order_id]);
-        
-        // 3. Hoàn lại số lượng sách vào kho
-        $stmt_items = $pdo->prepare("SELECT book_id, quantity FROM order_details WHERE order_id = :order_id");
-        $stmt_items->execute(['order_id' => (int)$order_id]);
-        $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
-        
-        $stmt_restore_stock = $pdo->prepare("UPDATE books SET quantity = quantity + :qty WHERE id = :book_id");
-        foreach ($items as $item) {
-            $stmt_restore_stock->execute([
-                'qty' => (int)$item['quantity'],
-                'book_id' => (int)$item['book_id']
-            ]);
-        }
-        
-        $pdo->commit();
-        return true;
-    } catch (PDOException $e) {
-        if ($pdo->inTransaction()) {
-            $pdo->rollBack();
-        }
-        return false;
     }
 }
-?>
 
+/**
+ * Class OrderRepository
+ * Tuân thủ SRP - Chỉ chịu trách nhiệm quản lý đơn hàng
+ */
+class OrderRepository {
+    private PDO $db;
+
+    public function __construct(DatabaseConnectionInterface $connectionManager) {
+        $this->db = $connectionManager->getConnection();
+    }
+
+    public function getOrders(): array {
+        try {
+            $stmt = $this->db->query("SELECT * FROM orders ORDER BY id ASC");
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($orders as &$order) {
+                $stmt_details = $this->db->prepare("
+                    SELECT od.book_id, od.quantity, od.price, b.title 
+                    FROM order_details od
+                    JOIN books b ON od.book_id = b.id
+                    WHERE od.order_id = :order_id
+                ");
+                $stmt_details->execute(['order_id' => $order['id']]);
+                $order['items'] = $stmt_details->fetchAll(PDO::FETCH_ASSOC);
+            }
+            return $orders;
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    public function getOrdersByUser(int $user_id): array {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM orders WHERE user_id = :user_id ORDER BY id DESC");
+            $stmt->execute(['user_id' => $user_id]);
+            $orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($orders as &$order) {
+                $stmt_details = $this->db->prepare("
+                    SELECT od.book_id, od.quantity, od.price, b.title, b.image
+                    FROM order_details od
+                    JOIN books b ON od.book_id = b.id
+                    WHERE od.order_id = :order_id
+                ");
+                $stmt_details->execute(['order_id' => $order['id']]);
+                $order['items'] = $stmt_details->fetchAll(PDO::FETCH_ASSOC);
+            }
+            return $orders;
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    public function saveOrder(string $customer_name, string $customer_phone, string $customer_address, array $cart_items, float $total_price, string $payment_method = 'COD'): int|bool {
+        try {
+            // Yêu cầu đăng nhập bắt buộc (SOLID: Business Rule Enforcement)
+            if (!isset($_SESSION['user_id'])) {
+                return false;
+            }
+            $user_id = $_SESSION['user_id'];
+            
+            $this->db->beginTransaction();
+            
+            $stmt = $this->db->prepare("INSERT INTO orders (user_id, total_price, customer_name, customer_phone, customer_address, payment_method) VALUES (:user_id, :total_price, :customer_name, :customer_phone, :customer_address, :payment_method)");
+            $stmt->execute([
+                'user_id' => $user_id,
+                'total_price' => $total_price,
+                'customer_name' => $customer_name,
+                'customer_phone' => $customer_phone,
+                'customer_address' => $customer_address,
+                'payment_method' => $payment_method
+            ]);
+            
+            $order_id = (int)$this->db->lastInsertId();
+            
+            $stmt_detail = $this->db->prepare("INSERT INTO order_details (order_id, book_id, quantity, price) VALUES (:order_id, :book_id, :quantity, :price)");
+            $stmt_update_qty = $this->db->prepare("UPDATE books SET quantity = quantity - :qty WHERE id = :book_id");
+            
+            foreach ($cart_items as $item) {
+                $stmt_detail->execute([
+                    'order_id' => $order_id,
+                    'book_id' => $item['book_id'],
+                    'quantity' => $item['quantity'],
+                    'price' => $item['price']
+                ]);
+                
+                $stmt_update_qty->execute([
+                    'qty' => $item['quantity'],
+                    'book_id' => $item['book_id']
+                ]);
+            }
+            
+            // Xóa giỏ hàng của user trong DB
+            $stmt_clear_cart = $this->db->prepare("DELETE FROM cart WHERE user_id = :user_id");
+            $stmt_clear_cart->execute(['user_id' => $user_id]);
+            
+            $this->db->commit();
+            return $order_id;
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+
+    public function updateStatus(int $order_id, string $status): bool {
+        try {
+            $stmt = $this->db->prepare("UPDATE orders SET status = :status WHERE id = :id");
+            return $stmt->execute([
+                'status' => $status,
+                'id' => $order_id
+            ]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    public function cancel(int $order_id): bool {
+        try {
+            $this->db->beginTransaction();
+            
+            $stmt = $this->db->prepare("SELECT status FROM orders WHERE id = :id");
+            $stmt->execute(['id' => $order_id]);
+            $order = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$order || $order['status'] === 'Đã hủy') {
+                $this->db->rollBack();
+                return false;
+            }
+            
+            $stmt_update = $this->db->prepare("UPDATE orders SET status = 'Đã hủy' WHERE id = :id");
+            $stmt_update->execute(['id' => $order_id]);
+            
+            $stmt_items = $this->db->prepare("SELECT book_id, quantity FROM order_details WHERE order_id = :order_id");
+            $stmt_items->execute(['order_id' => $order_id]);
+            $items = $stmt_items->fetchAll(PDO::FETCH_ASSOC);
+            
+            $stmt_restore_stock = $this->db->prepare("UPDATE books SET quantity = quantity + :qty WHERE id = :book_id");
+            foreach ($items as $item) {
+                $stmt_restore_stock->execute([
+                    'qty' => $item['quantity'],
+                    'book_id' => $item['book_id']
+                ]);
+            }
+            
+            $this->db->commit();
+            return true;
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return false;
+        }
+    }
+}
+
+/**
+ * Class CartManager
+ * Tuân thủ SRP - Chỉ chịu trách nhiệm quản lý Giỏ hàng của người dùng
+ */
+class CartManager {
+    private PDO $db;
+
+    public function __construct(DatabaseConnectionInterface $connectionManager) {
+        $this->db = $connectionManager->getConnection();
+    }
+
+    public function getCartCount(): int {
+        $count = 0;
+        if (isset($_SESSION['cart'])) {
+            foreach ($_SESSION['cart'] as $qty) {
+                $count += $qty;
+            }
+        }
+        return $count;
+    }
+
+    public function syncDbToSession(int $user_id): void {
+        if (!isset($_SESSION['cart'])) {
+            $_SESSION['cart'] = [];
+        }
+        try {
+            $stmt = $this->db->prepare("SELECT book_id, quantity FROM cart WHERE user_id = :user_id");
+            $stmt->execute(['user_id' => $user_id]);
+            $cart_items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach ($cart_items as $item) {
+                $_SESSION['cart'][$item['book_id']] = (int)$item['quantity'];
+            }
+        } catch (PDOException $e) {
+            // Bỏ qua lỗi
+        }
+    }
+
+    public function syncSessionToDb(int $user_id): void {
+        try {
+            $this->db->beginTransaction();
+            
+            $stmt_delete = $this->db->prepare("DELETE FROM cart WHERE user_id = :user_id");
+            $stmt_delete->execute(['user_id' => $user_id]);
+            
+            if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
+                $stmt_insert = $this->db->prepare("INSERT INTO cart (user_id, book_id, quantity) VALUES (:user_id, :book_id, :quantity)");
+                foreach ($_SESSION['cart'] as $book_id => $qty) {
+                    if ($qty > 0) {
+                        $stmt_insert->execute([
+                            'user_id' => $user_id,
+                            'book_id' => $book_id,
+                            'quantity' => $qty
+                        ]);
+                    }
+                }
+            }
+            
+            $this->db->commit();
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+        }
+    }
+}
+
+/**
+ * Class PayOSService
+ * Tuân thủ SRP - Chỉ phụ trách giao tiếp với cổng thanh toán PayOS
+ */
+class PayOSService {
+    private string $clientId;
+    private string $apiKey;
+    private string $checksumKey;
+
+    public function __construct(string $clientId, string $apiKey, string $checksumKey) {
+        $this->clientId = $clientId;
+        $this->apiKey = $apiKey;
+        $this->checksumKey = $checksumKey;
+    }
+
+    public function isConfigured(): bool {
+        return !empty($this->clientId) && !empty($this->apiKey) && !empty($this->checksumKey) &&
+               $this->clientId !== 'your_client_id' && $this->apiKey !== 'your_api_key' && $this->checksumKey !== 'your_checksum_key';
+    }
+
+    public function createPaymentLink(int $orderCode, float $amount, string $description, string $returnUrl, string $cancelUrl): ?string {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
+        $data = [
+            'amount' => (int)$amount,
+            'cancelUrl' => $cancelUrl,
+            'description' => substr(preg_replace('/[^a-zA-Z0-9 ]/', '', $description), 0, 25), // PayOS description max 25 chars, alphanumeric
+            'orderCode' => $orderCode,
+            'returnUrl' => $returnUrl
+        ];
+
+        // Sắp xếp khóa bảng chữ cái để tạo chữ ký
+        ksort($data);
+
+        // Chuỗi dữ liệu ký
+        $signParts = [];
+        foreach ($data as $key => $value) {
+            $signParts[] = "$key=$value";
+        }
+        $signString = implode('&', $signParts);
+
+        // Tạo chữ ký HMAC_SHA256
+        $signature = hash_hmac('sha256', $signString, $this->checksumKey);
+        $data['signature'] = $signature;
+
+        // Gửi cURL POST đến PayOS
+        $ch = curl_init('https://api-merchant.payos.vn/v2/payment-requests');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'x-client-id: ' . $this->clientId,
+            'x-api-key: ' . $this->apiKey
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $response) {
+            $resData = json_decode($response, true);
+            if (isset($resData['code']) && ($resData['code'] === '00' || $resData['code'] === '0' || $resData['code'] === 0) && isset($resData['data']['checkoutUrl'])) {
+                return $resData['data']['checkoutUrl'];
+            }
+        }
+        return null;
+    }
+
+    public function createPaymentLinkDetails(int $orderCode, float $amount, string $description, string $returnUrl, string $cancelUrl): ?array {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
+        $data = [
+            'amount' => (int)$amount,
+            'cancelUrl' => $cancelUrl,
+            'description' => substr(preg_replace('/[^a-zA-Z0-9 ]/', '', $description), 0, 25),
+            'orderCode' => $orderCode,
+            'returnUrl' => $returnUrl
+        ];
+
+        ksort($data);
+
+        $signParts = [];
+        foreach ($data as $key => $value) {
+            $signParts[] = "$key=$value";
+        }
+        $signString = implode('&', $signParts);
+
+        $signature = hash_hmac('sha256', $signString, $this->checksumKey);
+        $data['signature'] = $signature;
+
+        $ch = curl_init('https://api-merchant.payos.vn/v2/payment-requests');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'x-client-id: ' . $this->clientId,
+            'x-api-key: ' . $this->apiKey
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $response) {
+            $resData = json_decode($response, true);
+            if (isset($resData['code']) && ($resData['code'] === '00' || $resData['code'] === '0' || $resData['code'] === 0) && isset($resData['data'])) {
+                return $resData['data'];
+            }
+        }
+        return null;
+    }
+
+    public function getPaymentLinkInformation(int $orderCode): ?array {
+        if (!$this->isConfigured()) {
+            return null;
+        }
+
+        $ch = curl_init('https://api-merchant.payos.vn/v2/payment-requests/' . $orderCode);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'x-client-id: ' . $this->clientId,
+            'x-api-key: ' . $this->apiKey
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $response) {
+            $resData = json_decode($response, true);
+            if (isset($resData['code']) && ($resData['code'] === '00' || $resData['code'] === '0' || $resData['code'] === 0) && isset($resData['data'])) {
+                return $resData['data'];
+            }
+        }
+        return null;
+    }
+}
+
+// =========================================================================
+// FACADE / BACKWARD COMPATIBILITY WRAPPERS
+// Các hàm bao này giữ nguyên giao tiếp cũ để không phá vỡ code ở các trang khác
+// =========================================================================
+$bookRepo = new BookRepository($dbConnectionManager);
+$userRepo = new UserRepository($dbConnectionManager);
+$orderRepo = new OrderRepository($dbConnectionManager);
+$cartManager = new CartManager($dbConnectionManager);
+
+function get_books() {
+    global $bookRepo;
+    return $bookRepo->getAllBooks();
+}
+
+function get_book_by_id($id) {
+    global $bookRepo;
+    return $bookRepo->getBookById((int)$id);
+}
+
+function add_book($title, $author, $category, $price, $image, $description, $featured = 0, $quantity = 10) {
+    global $bookRepo;
+    return $bookRepo->add($title, $author, $category, (float)$price, $image, $description, (int)$featured, (int)$quantity);
+}
+
+function update_book($id, $title, $author, $category, $price, $image, $description, $featured = 0, $quantity = 10) {
+    global $bookRepo;
+    return $bookRepo->update((int)$id, $title, $author, $category, (float)$price, $image, $description, (int)$featured, (int)$quantity);
+}
+
+function delete_book($id) {
+    global $bookRepo;
+    return $bookRepo->delete((int)$id);
+}
+
+function get_users() {
+    global $userRepo;
+    return $userRepo->getAllUsers();
+}
+
+function get_user_by_email($email) {
+    global $userRepo;
+    return $userRepo->getByEmail($email);
+}
+
+function get_user_by_username($username) {
+    global $userRepo;
+    return $userRepo->getByUsername($username);
+}
+
+function register_user($username, $fullname, $email, $password) {
+    global $userRepo;
+    return $userRepo->register($username, $fullname, $email, $password);
+}
+
+function get_orders() {
+    global $orderRepo;
+    return $orderRepo->getOrders();
+}
+
+function get_orders_by_user($user_id) {
+    global $orderRepo;
+    return $orderRepo->getOrdersByUser((int)$user_id);
+}
+
+function save_order($customer_name, $customer_phone, $customer_address, $cart_items, $total_price, $payment_method = 'COD') {
+    global $orderRepo;
+    return $orderRepo->saveOrder($customer_name, $customer_phone, $customer_address, $cart_items, (float)$total_price, $payment_method);
+}
+
+function update_order_status($order_id, $status) {
+    global $orderRepo;
+    return $orderRepo->updateStatus((int)$order_id, $status);
+}
+
+function cancel_order($order_id) {
+    global $orderRepo;
+    return $orderRepo->cancel((int)$order_id);
+}
+
+function get_cart_count() {
+    global $cartManager;
+    return $cartManager->getCartCount();
+}
+
+function sync_db_cart_to_session($user_id) {
+    global $cartManager;
+    $cartManager->syncDbToSession((int)$user_id);
+}
+
+function sync_session_to_db_cart($user_id) {
+    global $cartManager;
+    $cartManager->syncSessionToDb((int)$user_id);
+}
+?>
