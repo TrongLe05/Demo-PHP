@@ -1,0 +1,144 @@
+@import url("style.css");
+
+/* =========================================================================
+   CHECKOUT MODULE (checkout.php)
+   ========================================================================= */
+
+/* Steps progress indicator */
+.steps-indicator {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 2rem auto 3.5rem;
+  max-width: 650px;
+  padding: 0 1rem;
+}
+
+.step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+}
+
+.step-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  border: 2px solid var(--glass-border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: var(--transition-smooth);
+  box-shadow: var(--card-shadow);
+}
+
+.step-node.active .step-circle {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+}
+
+.step-node.completed .step-circle {
+  background: #10b981;
+  border-color: #10b981;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+.step-label {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: var(--transition-smooth);
+}
+
+.step-node.active .step-label {
+  color: var(--text-main);
+}
+
+.step-node.completed .step-label {
+  color: #10b981;
+}
+
+.step-line {
+  flex-grow: 1;
+  height: 3px;
+  background: var(--glass-border);
+  margin: 0 -15px;
+  position: relative;
+  top: -16px;
+  z-index: 1;
+}
+
+.step-line.completed {
+  background: #10b981;
+}
+
+/* Payment Methods & Dynamic Elements styling */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.payment-method-card {
+  transition: var(--transition-smooth);
+  border: 1px solid var(--glass-border);
+}
+
+.payment-method-card:hover {
+  background: var(--surface-subtle);
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.payment-method-card.active {
+  border-color: var(--accent-color) !important;
+  background: var(--surface-subtle) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.payment-details-panel {
+  background: var(--surface-subtle);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+.credit-card-mockup {
+  position: relative;
+  box-shadow: var(--card-shadow);
+}
+
+.credit-card-mockup::before {
+  content: "";
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+}
+
+.checkout-items .border-bottom {
+  border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Exceptions for credit card mockup and QR codes which have dark background */
+.credit-card-mockup,
+.credit-card-mockup .text-white,
+.credit-card-mockup .card-number-display,
+.credit-card-mockup .card-name-display,
+.credit-card-mockup .card-expiry-display {
+  color: #ffffff !important;
+}
+
+.qr-mockup-wrapper svg {
+  display: block;
+  margin: 0 auto;
+}

@@ -25,6 +25,13 @@ foreach ($all_books as $book) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="assets/css/style.css">
+    <?php
+    $page_name = pathinfo($current_page, PATHINFO_FILENAME);
+    $css_file = "assets/css/{$page_name}.css";
+    if (file_exists(__DIR__ . "/../public/" . $css_file)) {
+        echo '    <link rel="stylesheet" href="' . $css_file . '">' . PHP_EOL;
+    }
+    ?>
 </head>
 <body>
 

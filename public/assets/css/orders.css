@@ -1,0 +1,40 @@
+@import url("style.css");
+
+/* =========================================================================
+   ORDERS MODULE (orders.php)
+   ========================================================================= */
+
+.order-box {
+  background: var(--bg-secondary) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.bg-black.bg-opacity-20,
+.bg-black.bg-opacity-25 {
+  background-color: var(--surface-subtle) !important;
+}
+
+.table.text-white {
+  color: var(--text-main) !important;
+}
+
+.table.text-white td,
+.table.text-white th {
+  color: var(--text-main) !important;
+}
+
+.text-white.item-total-display,
+.text-white.mb-0,
+.text-white.mb-1,
+.text-white.d-block {
+  color: var(--text-main) !important;
+}
+
+.order-book-img {
+  width: 40px;
+  height: 55px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--glass-border);
+  display: block;
+}

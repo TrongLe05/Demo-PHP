@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
             if (in_array($fileExtension, $allowedExtensions)) {
-                $uploadDir = __DIR__ . '/uploads/';
+                $uploadDir = __DIR__ . '/uploads/books/';
                 if (!is_dir($uploadDir)) {
                     mkdir($uploadDir, 0755, true);
                 }
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dest_path = $uploadDir . $newFileName;
                 
                 if (move_uploaded_file($fileTmpPath, $dest_path)) {
-                    $image = 'uploads/' . $newFileName;
+                    $image = 'uploads/books/' . $newFileName;
                 } else {
                     $errors['image_file'] = 'Có lỗi xảy ra khi lưu tệp ảnh lên máy chủ.';
                 }

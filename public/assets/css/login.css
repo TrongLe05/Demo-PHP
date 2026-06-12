@@ -1,0 +1,47 @@
+@import url("style.css");
+
+/* =========================================================================
+   AUTH MODULE (login.php)
+   ========================================================================= */
+
+/* Auth Cards */
+.auth-container {
+  max-width: 480px;
+  margin: 5rem auto;
+  padding: 3rem;
+}
+
+.auth-title {
+  font-family: var(--font-heading);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.form-group-custom {
+  margin-bottom: 1.5rem;
+}
+
+.form-group-custom label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.form-control-custom {
+  width: 100%;
+  background: var(--surface-subtle);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: var(--text-main);
+  transition: var(--transition-smooth);
+}
+
+.form-control-custom:focus {
+  background: var(--surface-strong);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.08);
+  outline: none;
+}
