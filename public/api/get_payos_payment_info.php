@@ -34,8 +34,9 @@ $cancelUrl = $base_url . "/checkout.php?action=payos_cancel&order_id=" . $tempOr
 $payOS = new PayOSService(PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY);
 
 if ($payOS->isConfigured()) {
+    $next_order_id = get_next_order_id();
     // Gọi API PayOS để lấy thông tin tài khoản thật
-    $payosData = $payOS->createPaymentLinkDetails($tempOrderCode, $amount, "Thanh toan don hang " . $tempOrderCode, $returnUrl, $cancelUrl);
+    $payosData = $payOS->createPaymentLinkDetails($tempOrderCode, $amount, "Thanh toan don hang " . $next_order_id, $returnUrl, $cancelUrl);
     if ($payosData) {
         echo json_encode([
             'success' => true,
@@ -45,6 +46,7 @@ if ($payOS->isConfigured()) {
             'accountName' => $payosData['accountName'],
             'amount' => $payosData['amount'],
             'description' => $payosData['description'],
+            'displayDescription' => 'Thanh toan don hang #' . $next_order_id,
             'qrCode' => $payosData['qrCode'] ?? null, // Trả về qrCode để sinh QR chính xác
             'tempOrderCode' => $tempOrderCode
         ]);

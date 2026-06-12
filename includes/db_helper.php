@@ -340,7 +340,7 @@ class OrderRepository {
         }
     }
 
-    public function saveOrder(string $customer_name, string $customer_phone, string $customer_address, array $cart_items, float $total_price, string $payment_method = 'COD'): int|bool {
+    public function saveOrder(string $customer_name, string $customer_phone, string $customer_address, array $cart_items, float $total_price, string $payment_method = 'COD', bool $clear_cart = true): int|bool {
         try {
             // Yêu cầu đăng nhập bắt buộc (SOLID: Business Rule Enforcement)
             if (!isset($_SESSION['user_id'])) {
@@ -379,9 +379,11 @@ class OrderRepository {
                 ]);
             }
             
-            // Xóa giỏ hàng của user trong DB
-            $stmt_clear_cart = $this->db->prepare("DELETE FROM cart WHERE user_id = :user_id");
-            $stmt_clear_cart->execute(['user_id' => $user_id]);
+            // Xóa giỏ hàng của user trong DB nếu được yêu cầu
+            if ($clear_cart) {
+                $stmt_clear_cart = $this->db->prepare("DELETE FROM cart WHERE user_id = :user_id");
+                $stmt_clear_cart->execute(['user_id' => $user_id]);
+            }
             
             $this->db->commit();
             return $order_id;
@@ -723,9 +725,9 @@ function get_orders_by_user($user_id) {
     return $orderRepo->getOrdersByUser((int)$user_id);
 }
 
-function save_order($customer_name, $customer_phone, $customer_address, $cart_items, $total_price, $payment_method = 'COD') {
+function save_order($customer_name, $customer_phone, $customer_address, $cart_items, $total_price, $payment_method = 'COD', $clear_cart = true) {
     global $orderRepo;
-    return $orderRepo->saveOrder($customer_name, $customer_phone, $customer_address, $cart_items, (float)$total_price, $payment_method);
+    return $orderRepo->saveOrder($customer_name, $customer_phone, $customer_address, $cart_items, (float)$total_price, $payment_method, $clear_cart);
 }
 
 function update_order_status($order_id, $status) {
@@ -751,5 +753,16 @@ function sync_db_cart_to_session($user_id) {
 function sync_session_to_db_cart($user_id) {
     global $cartManager;
     $cartManager->syncSessionToDb((int)$user_id);
+}
+
+function get_next_order_id() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT MAX(id) AS max_id FROM orders");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return ($row && $row['max_id']) ? ((int)$row['max_id'] + 1) : 1;
+    } catch (PDOException $e) {
+        return time();
+    }
 }
 ?>

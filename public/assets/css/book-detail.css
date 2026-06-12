@@ -9,21 +9,82 @@
 }
 
 .book-detail-img-wrapper {
+  position: relative; /* Đảm bảo làm neo cho nhãn discount-badge định vị tuyệt đối */
   border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--card-shadow);
   border: 1px solid var(--glass-border);
+  transition: var(--transition-smooth);
+}
+
+.book-detail-img-wrapper:hover {
+  transform: scale(1.02);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15);
 }
 
 .book-detail-info {
-  padding: 2rem;
+  padding: 1rem 2rem;
+}
+
+.book-detail-title {
+  font-family: var(--font-heading);
+  font-size: 2.0rem !important; /* Giảm cỡ chữ tiêu đề */
+  font-weight: 700;
+  line-height: 1.35;
+  text-shadow: 0 2px 8px rgba(255, 255, 255, 0.02);
 }
 
 .book-detail-price {
-  font-size: 2rem;
+  font-size: 1.8rem; /* Giảm cỡ chữ giá tiền */
   font-weight: 700;
   color: var(--accent-color);
-  margin: 1.5rem 0;
+  margin: 1rem 0;
+  text-shadow: 0 2px 8px rgba(196, 90, 45, 0.12);
+}
+
+.book-description {
+  font-size: 0.98rem; /* Cỡ chữ mô tả vừa phải, dễ đọc */
+  line-height: 1.75;
+  color: var(--text-muted) !important;
+}
+
+/* Đồng bộ chiều cao cho nút và ô số lượng */
+.book-detail-info .form-control-custom {
+  height: 48px;
+  padding: 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--surface-subtle);
+  color: var(--text-main);
+  transition: var(--transition-smooth);
+}
+
+.book-detail-info .form-control-custom:focus {
+  background: var(--surface-strong);
+  border-color: var(--primary-color);
+}
+
+.book-detail-info .btn-primary-custom,
+.book-detail-info .btn-secondary-custom {
+  height: 48px;
+  padding: 0 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 50px;
+  line-height: 1;
+}
+
+.btn-secondary-custom i {
+  transition: transform 0.2s ease;
+}
+
+.btn-secondary-custom:hover i {
+  transform: translateX(-4px);
 }
 
 /* Related books styling */
@@ -42,10 +103,15 @@
 
 .specs-table tr {
   border-bottom: 1px solid var(--glass-border);
+  transition: var(--transition-smooth);
+}
+
+.specs-table tr:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .specs-table td {
-  padding: 0.8rem 0;
+  padding: 0.8rem 1rem;
   font-size: 0.95rem;
 }
 
@@ -60,20 +126,43 @@
   font-weight: 600;
 }
 
-/* Star rating styles (dùng cho related books) */
+/* Star rating styles */
 .rating-stars {
   color: #f59e0b; /* Amber */
-  font-size: 0.8rem;
-  margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
   gap: 0.15rem;
 }
 
+.book-card .rating-stars {
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.book-detail-info .rating-stars {
+  font-size: 1.15rem;
+  margin-bottom: 1.5rem;
+}
+
 .rating-count {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
-  margin-left: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+/* Nhãn giảm giá */
+.discount-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #ef4444;
+  color: #ffffff !important;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3);
 }
 
 /* Books Grid & Cards (dùng cho related books) */
@@ -84,6 +173,17 @@
   overflow: hidden;
   position: relative;
   transition: var(--transition-smooth);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.book-card:hover {
+  background: var(--surface-subtle);
+  border-color: var(--glass-highlight);
+  transform: translateY(-4px);
+  box-shadow: var(--card-shadow);
 }
 
 .book-img-wrapper {
@@ -126,7 +226,7 @@
 
 .book-title {
   font-family: var(--font-heading);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
   line-height: 1.4;
@@ -159,12 +259,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
 }
 
 .book-price {
   font-size: 1.3rem;
   font-weight: 700;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .btn-add-cart {
@@ -185,7 +287,7 @@
   background: var(--accent-color);
   color: var(--bg-primary);
   border-color: var(--accent-color);
-  transform: rotate(90deg);
+  transform: translateY(-2px);
 }
 
 /* Book cover placeholders */

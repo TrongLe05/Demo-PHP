@@ -5,33 +5,240 @@
    ========================================================================= */
 
 .admin-card {
-  padding: 2rem;
+  padding: 2.2rem;
   margin-bottom: 2rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  box-shadow: var(--card-shadow);
 }
 
+/* Admin Table styling */
 .admin-table {
   width: 100%;
   color: var(--text-main);
+  border-collapse: collapse;
 }
 
 .admin-table th {
   color: var(--text-muted);
-  font-weight: 500;
-  padding: 1rem;
-  border-bottom: 1px solid var(--glass-border);
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  padding: 1.2rem 1rem;
+  border-bottom: 2px solid var(--glass-border);
 }
 
 .admin-table td {
-  padding: 1rem;
+  padding: 1.2rem 1rem;
   border-bottom: 1px solid var(--glass-border);
   vertical-align: middle;
+  transition: var(--transition-smooth);
 }
 
+/* Row Hover Highlights */
+.admin-table tbody tr {
+  transition: var(--transition-smooth);
+}
+
+.admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Book Cover Images */
 .admin-book-img {
-  width: 45px;
-  height: 60px;
+  width: 50px;
+  height: 70px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid var(--glass-border);
   display: block;
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.admin-book-img:hover {
+  transform: scale(1.1) rotate(1deg);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  border-color: var(--accent-color);
+}
+
+/* Action Buttons inside Table */
+.admin-table .btn {
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+}
+
+.admin-table .btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn-action-edit {
+  background: rgba(56, 189, 248, 0.08) !important;
+  border: 1px solid rgba(56, 189, 248, 0.2) !important;
+  color: #38bdf8 !important;
+}
+
+.btn-action-edit:hover {
+  background: #38bdf8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.4) !important;
+}
+
+.btn-action-delete {
+  background: rgba(244, 63, 94, 0.08) !important;
+  border: 1px solid rgba(244, 63, 94, 0.2) !important;
+  color: #f43f5e !important;
+}
+
+.btn-action-delete:hover {
+  background: #f43f5e !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4) !important;
+}
+
+/* Glow on active tab buttons */
+.btn-secondary-custom.active,
+.btn-primary-custom.active {
+  border-color: var(--accent-color) !important;
+  background: var(--surface-subtle) !important;
+  color: var(--text-main) !important;
+  box-shadow: 0 0 12px rgba(220, 194, 99, 0.15);
+}
+
+/* Custom Soft Badges */
+.badge {
+  padding: 0.4rem 0.75rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.badge.bg-success {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  color: #10b981 !important;
+  border: 1px solid rgba(16, 185, 129, 0.25) !important;
+}
+
+.badge.bg-info {
+  background-color: rgba(56, 189, 248, 0.12) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+}
+
+.badge.bg-danger {
+  background-color: rgba(244, 63, 94, 0.12) !important;
+  color: #f43f5e !important;
+  border: 1px solid rgba(244, 63, 94, 0.25) !important;
+}
+
+.badge.bg-secondary {
+  background-color: rgba(148, 163, 184, 0.12) !important;
+  color: #94a3b8 !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+
+/* Orders Dashboard Cards */
+.order-box {
+  background: var(--bg-secondary) !important;
+  border: 1px solid rgba(201, 174, 73, 0.2) !important;
+  border-left: 6px solid var(--text-muted) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+  transition: var(--transition-smooth);
+  padding: 1.8rem !important;
+  margin-bottom: 2.5rem !important; /* Tăng khoảng cách giữa các đơn hàng */
+}
+
+/* Biến đổi viền bên trái theo từng trạng thái đơn hàng để tạo điểm nhấn khác biệt */
+.order-box.status-pending-payment {
+  border-left-color: #ec4899 !important; /* Hồng - Chờ thanh toán */
+}
+
+.order-box.status-pending-confirm {
+  border-left-color: #ffb703 !important; /* Vàng - Chờ xác nhận */
+}
+
+.order-box.status-confirmed {
+  border-left-color: #6366f1 !important; /* Indigo - Đã xác nhận */
+}
+
+.order-box.status-delivering {
+  border-left-color: #0ea5e9 !important; /* Xanh trời - Đang giao */
+}
+
+.order-box.status-delivered {
+  border-left-color: #10b981 !important; /* Xanh lá - Đã giao */
+}
+
+.order-box.status-cancelled {
+  border-left-color: #ef4444 !important; /* Đỏ - Đã hủy */
+}
+
+.order-box:hover {
+  border-color: rgba(201, 174, 73, 0.5) !important;
+  box-shadow: 0 12px 36px rgba(220, 194, 99, 0.18) !important;
+  transform: translateY(-4px);
+}
+
+.order-box table {
+  background: transparent !important;
+}
+
+.order-box table tr {
+  border-bottom: 1px solid var(--glass-border) !important;
+}
+
+.order-box table th,
+.order-box table td {
+  border: none !important;
+  padding: 0.75rem 1rem !important;
+}
+
+/* Form layout adjustment */
+.max-width-800 {
+  max-width: 800px;
+}
+
+/* Admin Header Button Row - Fix 3 buttons on single line */
+.container > .row > .col-md-6:last-child {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.container > .row > .col-md-6:last-child .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  padding: 0.5rem 1.2rem !important;
+}
+
+/* Responsive adjustment */
+@media (max-width: 1024px) {
+  .container > .row > .col-md-6:last-child .btn {
+    font-size: 0.85rem;
+    padding: 0.45rem 1rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .container > .row > .col-md-6:last-child {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
 }

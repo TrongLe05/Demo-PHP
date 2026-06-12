@@ -44,7 +44,7 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <h2 class="section-title mb-0"><i class="fas fa-box-open text-warning me-2"></i>Đơn hàng của tôi</h2>
-        <a href="../index.php" class="btn btn-secondary-custom btn-sm"><i class="fas fa-shopping-basket me-2"></i>Tiếp tục mua sách</a>
+        <a href="index.php" class="btn btn-secondary-custom btn-sm"><i class="fas fa-shopping-basket me-2"></i>Tiếp tục mua sách</a>
     </div>
 
     <!-- Thông báo kết quả hủy -->
@@ -66,7 +66,7 @@ require_once __DIR__ . '/../includes/header.php';
             <i class="fas fa-receipt text-muted fa-4x mb-3"></i>
             <h4 class="text-white">Bạn chưa đặt đơn hàng nào</h4>
             <p class="text-muted">Hãy lựa chọn cho mình những cuốn sách ưng ý nhất và tiến hành thanh toán nhé.</p>
-            <a href="../index.php" class="btn btn-primary-custom mt-3"><i class="fas fa-home me-2"></i>Xem danh sách sách</a>
+            <a href="index.php" class="btn btn-primary-custom mt-3"><i class="fas fa-home me-2"></i>Xem danh sách sách</a>
         </div>
     <?php else: ?>
         <div class="row">
@@ -100,7 +100,7 @@ require_once __DIR__ . '/../includes/header.php';
                         $pm_icon = 'fa-wallet text-danger';
                     }
                 ?>
-                    <div class="glass-panel p-4 mb-4" style="transition: var(--transition-smooth); border: 1px solid var(--glass-border);">
+                    <div class="glass-panel p-4 mb-4 order-card status-<?php echo ($order['status'] === 'Chờ thanh toán' ? 'pending-payment' : ($order['status'] === 'Chờ xác nhận' ? 'pending-confirm' : ($order['status'] === 'Đã xác nhận' ? 'confirmed' : ($order['status'] === 'Đang giao' ? 'shipping' : ($order['status'] === 'Đã giao' ? 'delivered' : 'cancelled'))))); ?>">
                         <!-- Header đơn hàng -->
                         <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom flex-wrap gap-2" style="border-color: var(--glass-border) !important;">
                             <div>

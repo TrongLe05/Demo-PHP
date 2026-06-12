@@ -3,7 +3,7 @@ require_once __DIR__ . '/../includes/db_helper.php';
 
 // Đã đăng nhập rồi thì chuyển về trang chủ
 if (isset($_SESSION['user_id'])) {
-    header("Location: ../index.php");
+    header("Location: index.php");
     exit;
 }
 

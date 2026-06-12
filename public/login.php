@@ -3,7 +3,7 @@ require_once __DIR__ . '/../includes/db_helper.php';
 
 // Đã đăng nhập rồi thì chuyển về trang chủ
 if (isset($_SESSION['user_id'])) {
-    header("Location: ../index.php");
+    header("Location: index.php");
     exit;
 }
 
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user['role'] === 'admin') {
                 header("Location: admin.php");
             } else {
-                header("Location: ../index.php");
+                header("Location: index.php");
             }
             exit;
         } else {
@@ -53,29 +53,33 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="glass-panel auth-container">
         <h2 class="auth-title text-white">Đăng Nhập</h2>
         
-        <!-- Thông báo đăng ký thành công hoặc quyền truy cập -->
+        <!-- Thông báo đăng ký thành công hoặc quyền truy cập bằng Toast -->
         <?php if (isset($_GET['status']) && $_GET['status'] == 'registered'): ?>
-            <div class="alert alert-custom alert-success-custom d-flex align-items-center gap-2 mb-3">
-                <i class="fas fa-check-circle"></i>
-                <span>Đăng ký tài khoản thành công! Hãy đăng nhập.</span>
-            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('Đăng ký tài khoản thành công! Hãy đăng nhập.', 'success');
+            });
+            </script>
         <?php elseif (isset($_GET['status']) && $_GET['status'] == 'unauthorized'): ?>
-            <div class="alert alert-custom alert-danger-custom d-flex align-items-center gap-2 mb-3">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>Bạn cần đăng nhập bằng quyền Admin để truy cập trang đó.</span>
-            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('Bạn cần đăng nhập bằng quyền Admin để truy cập trang đó.', 'danger');
+            });
+            </script>
         <?php elseif (isset($_GET['status']) && $_GET['status'] == 'login_required'): ?>
-            <div class="alert alert-custom alert-danger-custom d-flex align-items-center gap-2 mb-3">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>Bạn cần đăng nhập tài khoản trước khi thực hiện mua sách hoặc thêm vào giỏ hàng.</span>
-            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('Bạn cần đăng nhập tài khoản trước khi thực hiện mua sách hoặc thêm vào giỏ hàng.', 'danger');
+            });
+            </script>
         <?php endif; ?>
         
         <?php if (isset($errors['global'])): ?>
-            <div class="alert alert-custom alert-danger-custom d-flex align-items-center gap-2 mb-3">
-                <i class="fas fa-exclamation-circle"></i>
-                <span><?php echo $errors['global']; ?></span>
-            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('<?php echo addslashes($errors['global']); ?>', 'danger');
+            });
+            </script>
         <?php endif; ?>
         
         <form action="login.php" method="POST">

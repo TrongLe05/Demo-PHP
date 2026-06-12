@@ -170,24 +170,45 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </div>
 
-    <!-- Thông báo kết quả -->
+    <!-- Thông báo kết quả bằng Toast -->
     <?php if ($success_message): ?>
-        <div class="alert alert-custom alert-success-custom d-flex align-items-center gap-2 mb-4">
-            <i class="fas fa-check-circle"></i>
-            <span><?php echo $success_message; ?></span>
-        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast('<?php echo addslashes($success_message); ?>', 'success');
+        });
+        </script>
     <?php endif; ?>
     <?php if (isset($errors['global'])): ?>
-        <div class="alert alert-custom alert-danger-custom d-flex align-items-center gap-2 mb-4">
-            <i class="fas fa-exclamation-circle"></i>
-            <span><?php echo $errors['global']; ?></span>
-        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast('<?php echo addslashes($errors['global']); ?>', 'danger');
+        });
+        </script>
     <?php endif; ?>
 
     <!-- CHẾ ĐỘ 1: DANH SÁCH SÁCH -->
     <?php if ($action === 'list'): ?>
         <div class="glass-panel admin-card table-responsive">
             <h4 class="text-white mb-4">Danh sách sản phẩm sách</h4>
+            
+            <!-- Bộ lọc và tìm kiếm sách -->
+            <div class="d-flex flex-wrap gap-3 mb-4 align-items-center">
+                <div class="flex-grow-1" style="max-width: 320px;">
+                    <div class="position-relative">
+                        <input type="text" id="admin-search-book" class="form-control-custom" placeholder="Tìm tên sách hoặc tác giả..." style="padding-left: 2.5rem;">
+                        <i class="fas fa-search position-absolute text-muted" style="left: 1rem; top: 50%; transform: translateY(-50%);"></i>
+                    </div>
+                </div>
+                <div>
+                    <select id="admin-filter-category" class="form-select form-control-custom" style="min-width: 220px;">
+                        <option value="">-- Tất cả thể loại --</option>
+                        <?php foreach ($categories as $cat): ?>
+                            <option value="<?php echo htmlspecialchars($cat); ?>"><?php echo htmlspecialchars($cat); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+
             <table class="table admin-table align-middle">
                 <thead>
                     <tr>
@@ -224,14 +245,102 @@ require_once __DIR__ . '/../includes/header.php';
                                     <?php echo (isset($b['featured']) && $b['featured'] == 1) ? '<span class="badge bg-success">Có</span>' : '<span class="badge bg-secondary">Không</span>'; ?>
                                 </td>
                                 <td class="text-center">
-                                    <a href="admin.php?action=edit&id=<?php echo $b['id']; ?>" class="btn btn-sm btn-secondary-custom me-1" title="Sửa"><i class="fas fa-edit text-info"></i></a>
-                                    <a href="admin.php?action=delete&id=<?php echo $b['id']; ?>" class="btn btn-sm btn-secondary-custom" onclick="return confirm('Bạn có chắc chắn muốn xóa cuốn sách này không?');" title="Xóa"><i class="fas fa-trash-alt text-danger"></i></a>
+                                    <a href="admin.php?action=edit&id=<?php echo $b['id']; ?>" class="btn btn-sm btn-action-edit me-1" title="Sửa"><i class="fas fa-edit"></i></a>
+                                    <a href="javascript:void(0);" class="btn btn-sm btn-action-delete btn-delete-book" data-id="<?php echo $b['id']; ?>" title="Xóa"><i class="fas fa-trash-alt"></i></a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
             </table>
+
+            <!-- Javascript thực hiện tìm kiếm và lọc dữ liệu sách mượt mà -->
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.getElementById('admin-search-book');
+                const categorySelect = document.getElementById('admin-filter-category');
+                const tableRows = document.querySelectorAll('.admin-table tbody tr');
+
+                if (searchInput && categorySelect) {
+                    function filterBooks() {
+                        const searchText = searchInput.value.toLowerCase().trim();
+                        const selectedCat = categorySelect.value;
+
+                        tableRows.forEach(row => {
+                            if (row.querySelector('td[colspan]')) return;
+
+                            const titleStrong = row.cells[2].querySelector('strong');
+                            const authorSmall = row.cells[2].querySelector('small');
+                            const categoryCell = row.cells[3];
+
+                            if (!titleStrong || !categoryCell) return;
+
+                            const titleText = titleStrong.textContent.toLowerCase();
+                            const authorText = authorSmall ? authorSmall.textContent.toLowerCase() : '';
+                            const categoryText = categoryCell.textContent.trim();
+
+                            const matchesSearch = titleText.includes(searchText) || authorText.includes(searchText);
+                            const matchesCategory = selectedCat === '' || categoryText === selectedCat;
+
+                            if (matchesSearch && matchesCategory) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        });
+                    }
+
+                    searchInput.addEventListener('input', filterBooks);
+                    categorySelect.addEventListener('change', filterBooks);
+                }
+
+                // Xử lý xóa sách bằng AJAX không cần reload trang
+                const deleteButtons = document.querySelectorAll('.btn-delete-book');
+                deleteButtons.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const bookId = this.getAttribute('data-id');
+                        const row = this.closest('tr');
+                        
+                        if (confirm('Bạn có chắc chắn muốn xóa cuốn sách này không?')) {
+                            const formData = new FormData();
+                            formData.append('id', bookId);
+                            
+                            fetch('api/delete_book_ajax.php', {
+                                method: 'POST',
+                                body: formData
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success) {
+                                    // Xóa hàng tương ứng trên bảng với hiệu ứng mượt mà
+                                    row.style.transition = 'all 0.4s ease';
+                                    row.style.opacity = '0';
+                                    row.style.transform = 'scale(0.95)';
+                                    setTimeout(() => {
+                                        row.remove();
+                                        // Hiển thị thông báo nếu bảng trống
+                                        const tableRows = document.querySelectorAll('.admin-table tbody tr');
+                                        if (tableRows.length === 0 || (tableRows.length === 1 && tableRows[0].querySelector('td[colspan]'))) {
+                                            const tbody = document.querySelector('.admin-table tbody');
+                                            if (tbody) {
+                                                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Chưa có cuốn sách nào trong cửa hàng.</td></tr>';
+                                            }
+                                        }
+                                    }, 400);
+                                } else {
+                                    showToast(data.message, 'danger');
+                                }
+                            })
+                            .catch(err => {
+                                console.error('Lỗi khi xóa sách:', err);
+                                showToast('Có lỗi xảy ra trong quá trình kết nối máy chủ.', 'danger');
+                            });
+                        }
+                    });
+                });
+            });
+            </script>
         </div>
 
     <!-- CHẾ ĐỘ 2: THÊM / SỬA SÁCH -->
@@ -278,10 +387,10 @@ require_once __DIR__ . '/../includes/header.php';
                             'Tài chính cá nhân'
                         ];
                         ?>
-                        <select id="category" name="category" class="form-select form-control-custom" style="color: white; background-color: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);" required>
-                            <option value="" style="background-color: #1a1a1a;">-- Chọn thể loại --</option>
+                        <select id="category" name="category" class="form-select form-control-custom" required>
+                            <option value="">-- Chọn thể loại --</option>
                             <?php foreach ($categories_list as $cat): ?>
-                                <option value="<?php echo htmlspecialchars($cat); ?>" style="background-color: #1a1a1a;" <?php 
+                                <option value="<?php echo htmlspecialchars($cat); ?>" <?php 
                                     $current_cat = $_POST['category'] ?? $edit_book['category'] ?? '';
                                     if ($current_cat === $cat) echo 'selected'; 
                                 ?>><?php echo htmlspecialchars($cat); ?></option>
@@ -322,7 +431,7 @@ require_once __DIR__ . '/../includes/header.php';
 
                 <div class="form-group-custom">
                     <label for="image">Hoặc nhập đường dẫn ảnh trực tuyến (URL)</label>
-                    <input type="url" id="image" name="image" class="form-control-custom" 
+                    <input type="text" id="image" name="image" class="form-control-custom" 
                            placeholder="https://example.com/image.jpg"
                            value="<?php echo htmlspecialchars($_POST['image'] ?? $edit_book['image'] ?? ''); ?>">
                     <?php if ($action === 'edit' && !empty($edit_book['image'])): ?>
@@ -359,8 +468,50 @@ require_once __DIR__ . '/../includes/header.php';
             <?php if (empty($orders)): ?>
                 <div class="text-center text-muted py-4">Chưa có đơn hàng nào được đặt.</div>
             <?php else: ?>
-                <?php foreach (array_reverse($orders) as $order): ?>
-                    <div class="order-box p-3 mb-4 rounded border" style="background: rgba(255, 255, 255, 0.01); border-color: var(--glass-border) !important;">
+                <!-- Bộ lọc và tìm kiếm đơn hàng -->
+                <div class="d-flex flex-wrap gap-3 mb-4 align-items-center">
+                    <div class="flex-grow-1" style="max-width: 320px;">
+                        <div class="position-relative">
+                            <input type="text" id="admin-search-order" class="form-control-custom" placeholder="Mã đơn hoặc tên khách..." style="padding-left: 2.5rem;">
+                            <i class="fas fa-search position-absolute text-muted" style="left: 1rem; top: 50%; transform: translateY(-50%);"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <select id="admin-filter-order-status" class="form-select form-control-custom" style="min-width: 200px;">
+                            <option value="">-- Tất cả trạng thái --</option>
+                            <option value="Chờ thanh toán">Chờ thanh toán</option>
+                            <option value="Chờ xác nhận">Chờ xác nhận</option>
+                            <option value="Đã xác nhận">Đã xác nhận</option>
+                            <option value="Đang giao">Đang giao</option>
+                            <option value="Đã giao">Đã giao</option>
+                            <option value="Đã hủy">Đã hủy</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="admin-filter-order-payment" class="form-select form-control-custom" style="min-width: 200px;">
+                            <option value="">-- Tất cả thanh toán --</option>
+                            <option value="COD">COD</option>
+                            <option value="PayOS">PayOS</option>
+                            <option value="Thẻ tín dụng">Thẻ tín dụng</option>
+                            <option value="QR">QR / VietQR</option>
+                        </select>
+                    </div>
+                </div>
+
+                <?php foreach (array_reverse($orders) as $order): 
+                    $status_class = '';
+                    if ($order['status'] === 'Chờ thanh toán') $status_class = 'status-pending-payment';
+                    elseif ($order['status'] === 'Chờ xác nhận') $status_class = 'status-pending-confirm';
+                    elseif ($order['status'] === 'Đã xác nhận') $status_class = 'status-confirmed';
+                    elseif ($order['status'] === 'Đang giao') $status_class = 'status-delivering';
+                    elseif ($order['status'] === 'Đã giao') $status_class = 'status-delivered';
+                    elseif ($order['status'] === 'Đã hủy') $status_class = 'status-cancelled';
+                ?>
+                    <div class="order-box <?php echo $status_class; ?> mb-4" 
+                         data-order-id="<?php echo $order['id']; ?>" 
+                         data-customer-name="<?php echo htmlspecialchars(strtolower($order['customer_name'])); ?>"
+                         data-status="<?php echo htmlspecialchars($order['status']); ?>"
+                         data-payment="<?php echo htmlspecialchars($order['payment_method']); ?>">
                         <div class="row mb-2">
                             <div class="col-md-6">
                                 <h5 class="text-warning mb-1">Mã đơn hàng: #<?php echo $order['id']; ?></h5>
@@ -497,6 +648,54 @@ require_once __DIR__ . '/../includes/header.php';
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
+
+            <!-- Javascript thực hiện tìm kiếm và lọc dữ liệu đơn hàng mượt mà -->
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.getElementById('admin-search-order');
+                const statusSelect = document.getElementById('admin-filter-order-status');
+                const paymentSelect = document.getElementById('admin-filter-order-payment');
+                const orderCards = document.querySelectorAll('.order-box');
+
+                if (searchInput && statusSelect && paymentSelect) {
+                    function filterOrders() {
+                        const searchText = searchInput.value.toLowerCase().trim();
+                        const selectedStatus = statusSelect.value;
+                        const selectedPayment = paymentSelect.value;
+
+                        orderCards.forEach(card => {
+                            const orderId = card.getAttribute('data-order-id') || '';
+                            const customerName = card.getAttribute('data-customer-name') || '';
+                            const status = card.getAttribute('data-status') || '';
+                            const payment = card.getAttribute('data-payment') || '';
+
+                            const matchesSearch = searchText === '' || orderId.includes(searchText) || customerName.includes(searchText);
+                            const matchesStatus = selectedStatus === '' || status === selectedStatus;
+                            
+                            // Hỗ trợ lọc theo loại payment (COD, PayOS, Thẻ tín dụng, QR)
+                            let matchesPayment = false;
+                            if (selectedPayment === '') {
+                                matchesPayment = true;
+                            } else if (selectedPayment === 'QR') {
+                                matchesPayment = payment === 'QR' || payment === 'Ví điện tử';
+                            } else {
+                                matchesPayment = payment === selectedPayment;
+                            }
+
+                            if (matchesSearch && matchesStatus && matchesPayment) {
+                                card.style.display = '';
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        });
+                    }
+
+                    searchInput.addEventListener('input', filterOrders);
+                    statusSelect.addEventListener('change', filterOrders);
+                    paymentSelect.addEventListener('change', filterOrders);
+                }
+            });
+            </script>
         </div>
     <?php endif; ?>
 </div>

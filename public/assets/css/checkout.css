@@ -5,82 +5,7 @@
    ========================================================================= */
 
 /* Steps progress indicator */
-.steps-indicator {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 2rem auto 3.5rem;
-  max-width: 650px;
-  padding: 0 1rem;
-}
-
-.step-node {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  z-index: 2;
-}
-
-.step-circle {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 2px solid var(--glass-border);
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.95rem;
-  transition: var(--transition-smooth);
-  box-shadow: var(--card-shadow);
-}
-
-.step-node.active .step-circle {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
-  color: #ffffff !important;
-  box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
-}
-
-.step-node.completed .step-circle {
-  background: #10b981;
-  border-color: #10b981;
-  color: #ffffff !important;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
-}
-
-.step-label {
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  transition: var(--transition-smooth);
-}
-
-.step-node.active .step-label {
-  color: var(--text-main);
-}
-
-.step-node.completed .step-label {
-  color: #10b981;
-}
-
-.step-line {
-  flex-grow: 1;
-  height: 3px;
-  background: var(--glass-border);
-  margin: 0 -15px;
-  position: relative;
-  top: -16px;
-  z-index: 1;
-}
-
-.step-line.completed {
-  background: #10b981;
-}
+/* Steps progress indicator - Moved to style.css for shared usage in cart.php and checkout.php */
 
 /* Payment Methods & Dynamic Elements styling */
 .cursor-pointer {
@@ -88,19 +13,34 @@
 }
 
 .payment-method-card {
+  position: relative;
   transition: var(--transition-smooth);
   border: 1px solid var(--glass-border);
+  border-radius: 16px;
 }
 
 .payment-method-card:hover {
   background: var(--surface-subtle);
-  border-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(201, 174, 73, 0.3) !important;
+  transform: translateY(-2px);
 }
 
 .payment-method-card.active {
   border-color: var(--accent-color) !important;
-  background: var(--surface-subtle) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  background: var(--surface-strong) !important;
+  box-shadow: 0 8px 25px rgba(220, 194, 99, 0.15) !important;
+}
+
+/* Active Checkmark Badge for Selected Payment Method */
+.payment-method-card.active::after {
+  content: "\f058"; /* Font Awesome check-circle */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--accent-color);
+  font-size: 1.1rem;
 }
 
 .payment-details-panel {
@@ -112,6 +52,13 @@
 .credit-card-mockup {
   position: relative;
   box-shadow: var(--card-shadow);
+  border-radius: 14px !important;
+  transition: var(--transition-smooth);
+}
+
+.credit-card-mockup:hover {
+  transform: translateY(-3px) rotate(1deg);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
 }
 
 .credit-card-mockup::before {
@@ -125,8 +72,153 @@
   border-radius: 50%;
 }
 
-.checkout-items .border-bottom {
-  border-color: rgba(0, 0, 0, 0.05) !important;
+/* =========================================================================
+   ORDER SUMMARY / CHECKOUT ITEMS
+   ========================================================================= */
+.cart-item-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 10px;
+  border-radius: 12px;
+  transition: var(--transition-smooth);
+  border-bottom: 1px solid var(--glass-border) !important;
+  margin-bottom: 10px !important;
+  background: transparent;
+}
+
+.cart-item-row:hover {
+  background: color-mix(in srgb, var(--accent-color) 6%, transparent);
+  border-color: transparent !important;
+  transform: translateX(4px);
+}
+
+.cart-item-row:last-child {
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+}
+
+/* Book Thumbnail */
+.checkout-item-img-wrapper {
+  width: 52px;
+  height: 74px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  transition: var(--transition-smooth);
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+}
+
+.checkout-item-img-wrapper .checkout-book-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: var(--transition-smooth);
+}
+
+.cart-item-row:hover .checkout-item-img-wrapper {
+  transform: translateY(-2px) rotate(-1deg);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
+  border-color: var(--accent-color);
+}
+
+.cart-item-row:hover .checkout-book-img {
+  transform: scale(1.08);
+}
+
+/* Item Title & Info */
+.checkout-item-title {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-main) !important;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Interactive Quantity Controls */
+.checkout-items .qty-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border);
+  background: var(--surface-subtle);
+  color: var(--text-main);
+  font-size: 0.8rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+}
+
+.checkout-items .qty-btn:hover {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: var(--button-text) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
+.checkout-items .qty-btn:active {
+  transform: scale(0.92);
+}
+
+.checkout-items .qty-input {
+  width: 28px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-main) !important;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0;
+  pointer-events: none;
+}
+
+/* Subtotal Display */
+.item-total-display {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--price-color) !important;
+  font-family: var(--font-body);
+  white-space: nowrap;
+  transition: var(--transition-smooth);
+}
+
+.cart-item-row:hover .item-total-display {
+  transform: scale(1.03);
+}
+
+/* Grand Total styling */
+#checkout-grand-total {
+  color: var(--accent-color) !important;
+  font-family: var(--font-heading);
+  font-weight: 700 !important;
+}
+
+/* Custom Scrollbar for Checkout Cart Items */
+.checkout-items::-webkit-scrollbar {
+  width: 6px;
+}
+.checkout-items::-webkit-scrollbar-track {
+  background: transparent;
+}
+.checkout-items::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 3px;
+  transition: var(--transition-smooth);
+}
+.checkout-items::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
 }
 
 /* Exceptions for credit card mockup and QR codes which have dark background */
@@ -142,3 +234,37 @@
   display: block;
   margin: 0 auto;
 }
+
+/* Custom Warning Button for QR simulation */
+.btn-warning-custom {
+  background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+  color: var(--button-text) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.6rem 1.8rem;
+  border-radius: 50px;
+  font-weight: 600;
+  transition: var(--transition-smooth);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-warning-custom:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(224, 122, 63, 0.25), 0 0 15px var(--accent-color);
+  color: var(--button-text) !important;
+}
+
+.btn-warning-custom:active {
+  transform: scale(0.98);
+}
+
+/* Custom form control validation error styling */
+.form-control-custom.is-invalid {
+  border-color: var(--danger-color) !important;
+  box-shadow: 0 0 10px rgba(185, 74, 72, 0.15) !important;
+  background-color: rgba(185, 74, 72, 0.03) !important;
+}
+

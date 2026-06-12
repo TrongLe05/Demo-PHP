@@ -66,17 +66,19 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     </div>
 
-    <!-- Thông báo kết quả thao tác -->
+    <!-- Thông báo kết quả thao tác bằng Toast -->
     <?php if (isset($_GET['status']) && $_GET['status'] == 'updated'): ?>
-        <div class="alert alert-custom alert-success-custom d-flex align-items-center gap-2 mb-4" role="alert">
-            <i class="fas fa-check-circle"></i>
-            <span>Cập nhật số lượng giỏ hàng thành công!</span>
-        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast('Cập nhật số lượng giỏ hàng thành công!', 'success');
+        });
+        </script>
     <?php elseif (isset($_GET['status']) && $_GET['status'] == 'removed'): ?>
-        <div class="alert alert-custom alert-danger-custom d-flex align-items-center gap-2 mb-4" role="alert">
-            <i class="fas fa-trash-alt"></i>
-            <span>Đã xóa sách khỏi giỏ hàng.</span>
-        </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            showToast('Đã xóa sách khỏi giỏ hàng.', 'danger');
+        });
+        </script>
     <?php endif; ?>
 
     <?php if (empty($_SESSION['cart'])): ?>
@@ -84,7 +86,7 @@ require_once __DIR__ . '/../includes/header.php';
             <i class="fas fa-shopping-cart text-muted fa-4x mb-3"></i>
             <h4 class="text-white">Giỏ hàng của bạn đang trống</h4>
             <p class="text-muted">Hãy lấp đầy nó bằng những cuốn sách hay từ cửa hàng của chúng tôi.</p>
-            <a href="../index.php" class="btn btn-primary-custom mt-3"><i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm</a>
+            <a href="index.php" class="btn btn-primary-custom mt-3"><i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm</a>
         </div>
     <?php else: ?>
         <form action="cart.php" method="POST">
@@ -96,7 +98,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <table class="table cart-table align-middle">
                             <thead>
                                 <tr>
-                                    <th scope="col" style="width: 50px;"></th>
+                                    <th scope="col" style="width: 80px;"></th>
                                     <th scope="col">Tên sách / Tác giả</th>
                                     <th scope="col" style="width: 120px;">Giá bán</th>
                                     <th scope="col" style="width: 120px;">Số lượng</th>
@@ -138,7 +140,7 @@ require_once __DIR__ . '/../includes/header.php';
                                             <strong class="text-white"><?php echo number_format($subtotal, 0, ',', '.'); ?> đ</strong>
                                         </td>
                                         <td>
-                                            <a href="cart.php?remove=<?php echo $book['id']; ?>" class="btn-remove" title="Xóa khỏi giỏ hàng">
+                                            <a href="javascript:void(0);" class="btn-remove btn-remove-cart" data-book-id="<?php echo $book['id']; ?>" title="Xóa khỏi giỏ hàng">
                                                 <i class="far fa-trash-alt"></i>
                                             </a>
                                         </td>
@@ -148,8 +150,7 @@ require_once __DIR__ . '/../includes/header.php';
                         </table>
                         
                         <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-3">
-                            <a href="../index.php" class="btn btn-secondary-custom"><i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm</a>
-                            <!-- <button type="submit" name="update_cart" class="btn btn-secondary-custom"><i class="fas fa-sync-alt me-2"></i>Cập nhật giỏ hàng</button> -->
+                            <a href="index.php" class="btn btn-secondary-custom"><i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm</a>
                         </div>
                     </div>
                 </div>
@@ -160,7 +161,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <h4 class="text-white mb-4" style="font-family: var(--font-heading);">Tóm tắt đơn hàng</h4>
                         <div class="d-flex justify-content-between mb-3 text-muted">
                             <span>Tổng số lượng sách:</span>
-                            <span><?php echo get_cart_count(); ?> cuốn</span>
+                            <span class="cart-total-qty-display"><?php echo get_cart_count(); ?> cuốn</span>
                         </div>
                         <div class="d-flex justify-content-between mb-3 text-muted">
                             <span>Phí vận chuyển:</span>
@@ -169,7 +170,7 @@ require_once __DIR__ . '/../includes/header.php';
                         <hr style="border-color: var(--glass-border);" class="my-4">
                         <div class="d-flex justify-content-between mb-4 align-items-center">
                             <span class="text-white fs-5">Thành tiền:</span>
-                            <span class="text-warning fs-3 font-weight-700"><?php echo number_format($total_price, 0, ',', '.'); ?> đ</span>
+                            <span class="text-warning fs-3 font-weight-700 cart-grand-total-display"><?php echo number_format($total_price, 0, ',', '.'); ?> đ</span>
                         </div>
                         
                         <a href="checkout.php" class="btn btn-primary-custom w-100 py-3 text-center d-block">
@@ -183,10 +184,79 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <script>
-    const qtyInputs = document.getElemenetById('qtyInput');
-
-
-
+document.addEventListener('DOMContentLoaded', function() {
+    const removeButtons = document.querySelectorAll('.btn-remove-cart');
+    removeButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const bookId = this.getAttribute('data-book-id');
+            const row = this.closest('.cart-row');
+            
+            if (confirm('Bạn có chắc chắn muốn xóa cuốn sách này khỏi giỏ hàng không?')) {
+                const formData = new FormData();
+                formData.append('book_id', bookId);
+                formData.append('quantity', 0); // 0 để xóa sản phẩm
+                
+                fetch('api/update_cart_ajax.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        // Hiệu ứng xóa mượt mà
+                        row.style.transition = 'all 0.4s ease';
+                        row.style.opacity = '0';
+                        row.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            row.remove();
+                            
+                            // Cập nhật lại tổng tiền trên giao diện
+                            const grandTotalEl = document.querySelector('.cart-grand-total-display');
+                            if (grandTotalEl) {
+                                grandTotalEl.innerText = data.total_price;
+                            }
+                            
+                            // Cập nhật lại tổng số lượng sách trên giao diện
+                            const totalQtyEl = document.querySelector('.cart-total-qty-display');
+                            if (totalQtyEl) {
+                                totalQtyEl.innerText = data.cart_count + ' cuốn';
+                            }
+                            
+                            // Cập nhật giỏ hàng trên header nếu có class .cart-badge
+                            const headerBadge = document.querySelector('.cart-badge');
+                            if (headerBadge) {
+                                headerBadge.innerText = data.cart_count;
+                            }
+                            
+                            // Nếu giỏ hàng trống, hiển thị màn hình trống
+                            if (data.cart_count === 0) {
+                                const container = document.querySelector('.container.my-5');
+                                if (container) {
+                                    container.innerHTML = `
+                                        <h2 class="section-title mb-4">Giỏ Hàng Của Bạn</h2>
+                                        <div class="glass-panel text-center p-5">
+                                            <i class="fas fa-shopping-cart text-muted fa-4x mb-3"></i>
+                                            <h4 class="text-white">Giỏ hàng của bạn đang trống</h4>
+                                            <p class="text-muted">Hãy lấp đầy nó bằng những cuốn sách hay từ cửa hàng của chúng tôi.</p>
+                                            <a href="index.php" class="btn btn-primary-custom mt-3"><i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm</a>
+                                        </div>
+                                    `;
+                                }
+                            }
+                        }, 400);
+                    } else {
+                        showToast(data.message, 'danger');
+                    }
+                })
+                .catch(err => {
+                    console.error('Lỗi khi xóa sản phẩm:', err);
+                    showToast('Có lỗi xảy ra trong quá trình kết nối máy chủ.', 'danger');
+                });
+            }
+        });
+    });
+});
 </script>
 
 <?php

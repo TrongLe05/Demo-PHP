@@ -4,14 +4,44 @@
    ORDERS MODULE (orders.php)
    ========================================================================= */
 
-.order-box {
-  background: var(--bg-secondary) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+.order-card {
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  transition: var(--transition-smooth);
 }
 
-.bg-black.bg-opacity-20,
-.bg-black.bg-opacity-25 {
+.order-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1), var(--card-shadow);
+}
+
+/* Đường viền trái phân biệt trạng thái đơn hàng */
+.order-card.status-pending-payment {
+  border-left: 5px solid var(--danger-color) !important;
+}
+.order-card.status-pending-confirm {
+  border-left: 5px solid var(--warning-color) !important;
+}
+.order-card.status-confirmed {
+  border-left: 5px solid #818cf8 !important;
+}
+.order-card.status-shipping {
+  border-left: 5px solid #60a5fa !important;
+}
+.order-card.status-delivered {
+  border-left: 5px solid var(--success-color) !important;
+}
+.order-card.status-cancelled {
+  border-left: 5px solid #f87171 !important;
+}
+
+.bg-black.bg-opacity-20 {
   background-color: var(--surface-subtle) !important;
+  border-radius: 10px;
 }
 
 .table.text-white {
@@ -31,10 +61,15 @@
 }
 
 .order-book-img {
-  width: 40px;
-  height: 55px;
+  width: 45px;
+  height: 60px;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: 6px;
   border: 1px solid var(--glass-border);
   display: block;
+  transition: var(--transition-smooth);
+}
+
+.order-card:hover .order-book-img {
+  transform: scale(1.05);
 }

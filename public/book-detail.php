@@ -5,7 +5,7 @@ $book_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $book = get_book_by_id($book_id);
 
 if (!$book) {
-    header("Location: ../index.php");
+    header("Location: index.php");
     exit;
 }
 
@@ -73,7 +73,7 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="container book-detail-container">
     <!-- Nút quay lại -->
     <div class="mb-4">
-        <a href="../index.php" class="btn btn-secondary-custom"><i class="fas fa-arrow-left me-2"></i>Quay lại trang chủ</a>
+        <a href="index.php" class="btn btn-secondary-custom"><i class="fas fa-arrow-left me-2"></i>Quay lại trang chủ</a>
     </div>
 
     <!-- Thông báo thêm giỏ hàng thành công -->
@@ -97,7 +97,7 @@ require_once __DIR__ . '/../includes/header.php';
             <!-- Thông tin sách -->
             <div class="col-md-7 col-lg-8 book-detail-info">
                 <span class="badge bg-warning text-dark mb-2 px-3 py-2 fs-6"><?php echo htmlspecialchars($book['category']); ?></span>
-                <h1 class="text-white mb-2" style="font-family: var(--font-heading); font-size: 2.8rem; font-weight: 700; text-shadow: 0 2px 10px rgba(255,255,255,0.05);">
+                <h1 class="text-white mb-2 book-detail-title">
                     <?php echo htmlspecialchars($book['title']); ?>
                 </h1>
                 <h5 class="text-muted mb-3">Tác giả: <strong class="text-white"><?php echo htmlspecialchars($book['author']); ?></strong></h5>
@@ -124,7 +124,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <hr style="border-color: var(--glass-border);">
                 
                 <div class="d-flex align-items-center gap-3 my-3">
-                    <span class="text-muted text-decoration-line-through fs-5"><?php echo number_format($original_price, 0, ',', '.'); ?> đ</span>
+                    <span class="text-muted text-decoration-line-through fs-6"><?php echo number_format($original_price, 0, ',', '.'); ?> đ</span>
                     <div class="book-detail-price my-0">
                         <?php echo number_format($book['price'], 0, ',', '.'); ?> đ
                     </div>
@@ -139,7 +139,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php endif; ?>
                 </div>
                 
-                <p class="text-muted mb-4 fs-5" style="line-height: 1.8;">
+                <p class="book-description mb-4">
                     <?php echo nl2br(htmlspecialchars($book['description'])); ?>
                 </p>
                 
@@ -208,9 +208,11 @@ require_once __DIR__ . '/../includes/header.php';
                     <div class="col">
                         <div class="glass-panel glass-panel-hover book-card">
                             <div class="discount-badge">-15%</div>
-                            <div class="book-img-wrapper">
-                                <img src="<?php echo htmlspecialchars(!empty($r_book['image']) ? ((strpos($r_book['image'], 'http') === 0 || strpos($r_book['image'], 'uploads/') === 0) ? $r_book['image'] : 'uploads/' . $r_book['image']) : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500'); ?>" class="book-img" alt="<?php echo htmlspecialchars($r_book['title']); ?>">
-                            </div>
+                            <a href="book-detail.php?id=<?php echo $r_book['id']; ?>">
+                                <div class="book-img-wrapper">
+                                    <img src="<?php echo htmlspecialchars(!empty($r_book['image']) ? ((strpos($r_book['image'], 'http') === 0 || strpos($r_book['image'], 'uploads/') === 0) ? $r_book['image'] : 'uploads/' . $r_book['image']) : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500'); ?>" class="book-img" alt="<?php echo htmlspecialchars($r_book['title']); ?>">
+                                </div>
+                            </a>
                             <div class="book-card-body">
                                 <span class="book-category" style="font-size: 0.75rem;"><?php echo htmlspecialchars($r_book['category']); ?></span>
                                 <h5 class="book-title" style="font-size: 1.1rem; height: 3rem;">
@@ -224,10 +226,9 @@ require_once __DIR__ . '/../includes/header.php';
 
                                 <div class="book-price-row align-items-center mt-auto">
                                     <div>
-                                        <span class="original-price" style="font-size: 0.8rem;"><?php echo number_format($r_original_price, 0, ',', '.'); ?> đ</span>
                                         <span class="book-price text-warning d-block" style="font-size: 1.1rem;"><?php echo number_format($r_book['price'], 0, ',', '.'); ?> đ</span>
                                     </div>
-                                    <a href="../index.php?add_to_cart=<?php echo $r_book['id']; ?>" class="btn-add-cart" style="width: 34px; height: 34px;" title="Thêm vào giỏ hàng">
+                                    <a href="index.php?add_to_cart=<?php echo $r_book['id']; ?>" class="btn-add-cart" style="width: 34px; height: 34px;" title="Thêm vào giỏ hàng">
                                         <i class="fas fa-plus"></i>
                                     </a>
                                 </div>

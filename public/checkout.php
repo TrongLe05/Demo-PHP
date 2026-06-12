@@ -10,6 +10,15 @@ if (!isset($_SESSION['user_id'])) {
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 $order_id_param = isset($_GET['order_id']) ? (int)$_GET['order_id'] : 0;
 
+// Xác định luồng Mua ngay (Buy Now)
+$buy_now_id = 0;
+if (isset($_GET['buy_now'])) {
+    $buy_now_id = (int)$_GET['buy_now'];
+} elseif (isset($_POST['buy_now_id'])) {
+    $buy_now_id = (int)$_POST['buy_now_id'];
+}
+$is_buy_now = ($buy_now_id > 0);
+
 if ($action === 'payos_success' && $order_id_param > 0) {
     // Cập nhật trạng thái đơn hàng sang Đã xác nhận
     update_order_status($order_id_param, 'Đã xác nhận');
@@ -19,9 +28,9 @@ if ($action === 'payos_success' && $order_id_param > 0) {
     cancel_order($order_id_param);
     $payos_cancelled = true;
 } else {
-    // Không cho phép truy cập nếu giỏ hàng trống và không phải là callback thanh toán
-    if (empty($_SESSION['cart'])) {
-        header("Location: ../index.php");
+    // Không cho phép truy cập nếu không phải mua ngay và giỏ hàng trống, và không phải callback thanh toán
+    if (!$is_buy_now && empty($_SESSION['cart'])) {
+        header("Location: index.php");
         exit;
     }
 }
@@ -31,20 +40,39 @@ if (!isset($success)) {
     $success = false;
 }
 
-// Đọc thông tin từ giỏ hàng
+// Đọc thông tin từ giỏ hàng hoặc cuốn sách Mua ngay
 $cart_items = [];
 $total_price = 0;
-if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
-    foreach ($_SESSION['cart'] as $book_id => $qty) {
-        $book = get_book_by_id($book_id);
-        if ($book) {
-            $cart_items[] = [
-                'book_id' => $book['id'],
-                'title' => $book['title'],
-                'price' => $book['price'],
-                'quantity' => $qty
-            ];
-            $total_price += $book['price'] * $qty;
+
+if ($is_buy_now) {
+    $book = get_book_by_id($buy_now_id);
+    if ($book) {
+        $cart_items[] = [
+            'book_id' => $book['id'],
+            'title' => $book['title'],
+            'price' => $book['price'],
+            'quantity' => 1, // Mặc định là 1 khi mua ngay
+            'image' => $book['image']
+        ];
+        $total_price = $book['price'];
+    } else {
+        header("Location: index.php");
+        exit;
+    }
+} else {
+    if (isset($_SESSION['cart']) && !empty($_SESSION['cart'])) {
+        foreach ($_SESSION['cart'] as $book_id => $qty) {
+            $book = get_book_by_id($book_id);
+            if ($book) {
+                $cart_items[] = [
+                    'book_id' => $book['id'],
+                    'title' => $book['title'],
+                    'price' => $book['price'],
+                    'quantity' => $qty,
+                    'image' => $book['image']
+                ];
+                $total_price += $book['price'] * $qty;
+            }
         }
     }
 }
@@ -65,6 +93,7 @@ $payment_method_meta = [
 ];
 
 $enabled_payment_methods = get_enabled_payment_methods();
+$next_order_id = get_next_order_id();
 $default_payment_method = get_default_payment_method();
 $selected_payment_method = $_POST['payment_method'] ?? $default_payment_method;
 if (!in_array($selected_payment_method, $enabled_payment_methods, true)) {
@@ -78,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address = trim($_POST['address'] ?? '');
     $payment_method = trim($_POST['payment_method'] ?? $default_payment_method);
     $payos_paid_verified = trim($_POST['payos_paid_verified'] ?? '0');
+    $qr_paid_verified = trim($_POST['qr_paid_verified'] ?? '0');
     
     if (empty($fullname)) {
         $errors['fullname'] = 'Họ tên người nhận không được để trống.';
@@ -109,18 +139,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
+        } elseif ($payment_method === 'QR') {
+            if ($qr_paid_verified !== '1') {
+                $payment_valid = false;
+                $errors['global'] = 'Vui lòng hoàn tất thanh toán chuyển khoản QR Code trước khi đặt hàng.';
+            }
         }
         
         if ($payment_valid) {
-            // Lưu đơn hàng vào CSDL MySQL thông qua helper
-            $order_id = save_order($fullname, $phone, $address, $cart_items, $total_price, $payment_method);
+            // Lưu đơn hàng vào CSDL MySQL thông qua helper (chuyền thêm tham số $clear_cart)
+            $order_id = save_order($fullname, $phone, $address, $cart_items, $total_price, $payment_method, !$is_buy_now);
             if ($order_id) {
-                // Nếu là PayOS, cập nhật trạng thái đơn hàng thành Đã xác nhận vì đã thanh toán thành công
-                if ($payment_method === 'PayOS') {
+                // Nếu là PayOS hoặc QR, cập nhật trạng thái đơn hàng thành Đã xác nhận vì đã thanh toán thành công
+                if ($payment_method === 'PayOS' || $payment_method === 'QR') {
                     update_order_status($order_id, 'Đã xác nhận');
                 }
-                // Xóa giỏ hàng sau khi đặt hàng thành công
-                unset($_SESSION['cart']);
+                // Xóa giỏ hàng sau khi đặt hàng thành công (chỉ khi không phải luồng mua ngay)
+                if (!$is_buy_now) {
+                    unset($_SESSION['cart']);
+                }
                 $success = true;
             } else {
                 $errors['global'] = 'Lỗi hệ thống! Không thể đặt hàng vào lúc này. Vui lòng liên hệ quản trị viên.';
@@ -133,6 +170,7 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="container my-5">
+    <h2 class="section-title mb-4">Thanh Toán Đơn Hàng</h2>
     <?php if ($success): ?>
         <!-- Thanh tiến trình mua hàng -->
         <div class="steps-indicator">
@@ -157,7 +195,7 @@ require_once __DIR__ . '/../includes/header.php';
             <h2 class="text-white mb-3" style="font-family: var(--font-heading);">Đặt Hàng Thành Công!</h2>
             <p class="text-muted fs-5">Cảm ơn bạn đã mua hàng tại <strong>3FC</strong>. Đơn hàng của bạn đã được thanh toán và đang được chuẩn bị vận chuyển.</p>
             <div class="mt-4">
-                <a href="../index.php" class="btn btn-primary-custom"><i class="fas fa-shopping-basket me-2"></i>Tiếp tục mua sắm</a>
+                <a href="index.php" class="btn btn-primary-custom"><i class="fas fa-shopping-basket me-2"></i>Tiếp tục mua sắm</a>
             </div>
         </div>
     <?php elseif (isset($payos_cancelled) && $payos_cancelled): ?>
@@ -166,7 +204,7 @@ require_once __DIR__ . '/../includes/header.php';
             <h2 class="text-white mb-3" style="font-family: var(--font-heading);">Thanh Toán Bị Hủy</h2>
             <p class="text-muted fs-5">Bạn đã hủy thanh toán qua cổng PayOS. Đơn hàng #<?php echo $order_id_param; ?> đã được hủy tự động.</p>
             <div class="mt-4">
-                <a href="../index.php" class="btn btn-primary-custom"><i class="fas fa-shopping-basket me-2"></i>Tiếp tục mua sắm</a>
+                <a href="index.php" class="btn btn-primary-custom"><i class="fas fa-shopping-basket me-2"></i>Tiếp tục mua sắm</a>
             </div>
         </div>
     <?php else: ?>
@@ -187,14 +225,13 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="step-label">Hoàn tất</div>
             </div>
         </div>
-
-        <h2 class="section-title mb-4">Thanh Toán Đơn Hàng</h2>
         
         <?php if (isset($errors['global'])): ?>
-            <div class="alert alert-custom alert-danger-custom d-flex align-items-center gap-2 mb-4">
-                <i class="fas fa-exclamation-circle"></i>
-                <span><?php echo $errors['global']; ?></span>
-            </div>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast('<?php echo addslashes($errors['global']); ?>', 'danger');
+            });
+            </script>
         <?php endif; ?>
 
         <div class="row">
@@ -203,13 +240,15 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="glass-panel p-4">
                     <h4 class="text-white mb-4" style="font-family: var(--font-heading);"><i class="fas fa-shipping-fast text-warning me-2"></i>Thông tin nhận hàng</h4>
                     
-                    <form action="checkout.php" method="POST" id="checkout-form">
+                    <form action="checkout.php<?php echo $is_buy_now ? '?buy_now=' . $buy_now_id : ''; ?>" method="POST" id="checkout-form">
+                        <input type="hidden" name="buy_now_id" value="<?php echo $buy_now_id; ?>">
                         <!-- Cấu hình tài khoản ngân hàng của cửa hàng từ .env -->
                         <input type="hidden" id="merchant-bank-id" value="<?php echo htmlspecialchars(getenv('MERCHANT_BANK_ID') ?: 'vietinbank'); ?>">
                         <input type="hidden" id="merchant-account-no" value="<?php echo htmlspecialchars(getenv('MERCHANT_ACCOUNT_NO') ?: '113366668888'); ?>">
                         <input type="hidden" id="merchant-account-name" value="<?php echo htmlspecialchars(getenv('MERCHANT_ACCOUNT_NAME') ?: '3FC SHOP'); ?>">
                         <input type="hidden" id="temp-order-code" name="temp_order_code" value="">
                         <input type="hidden" id="payos-paid-verified" name="payos_paid_verified" value="0">
+                        <input type="hidden" id="qr-paid-verified" name="qr_paid_verified" value="0">
 
                         <div class="form-group-custom">
                             <label for="fullname">Họ và tên người nhận *</label>
@@ -241,7 +280,8 @@ require_once __DIR__ . '/../includes/header.php';
                         <!-- Phương thức thanh toán -->
                         <div class="form-group-custom mt-4">
                             <label class="mb-3 d-block text-white" style="font-weight: 500;"><i class="fas fa-credit-card text-warning me-2"></i>Phương thức thanh toán *</label>
-                            <div class="row g-3">
+                            
+                            <div class="row g-3" id="payment-methods-container">
                                 <?php foreach ($enabled_payment_methods as $method): ?>
                                     <?php $meta = $payment_method_meta[$method]; ?>
                                     <div class="col-sm-6">
@@ -272,19 +312,26 @@ require_once __DIR__ . '/../includes/header.php';
                                 <p class="text-white mb-2" style="font-size: 0.9rem; font-weight: 600;"><i class="fas fa-wallet text-danger me-2"></i>Thanh toán qua Cổng PayOS</p>
                                 <p class="text-muted mb-3" style="font-size: 0.85rem;">Quét mã VietQR dưới đây để thanh toán qua cổng PayOS</p>
                                 
-                                <div class="qr-mockup-wrapper bg-white p-3 rounded d-inline-block mb-2 position-relative" style="box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: 2px solid #0052cc; min-width: 200px; min-height: 200px;">
-                                    <span class="badge bg-danger position-absolute" style="top: 8px; right: 8px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; border-radius: 4px; z-index: 10;">payOS</span>
-                                    <div id="payos-qr-loading" class="position-absolute top-50 start-50 translate-middle d-none" style="z-index: 5;">
-                                        <div class="spinner-border text-primary" role="status">
-                                            <span class="visually-hidden">Đang tải...</span>
-                                        </div>
-                                    </div>
-                                    <img id="payos-qr-image" 
-                                         src="" 
-                                         alt="PayOS QR Payment" 
-                                         style="max-width: 200px; height: auto; display: block; min-height: 150px;">
+                                <div id="payos-placeholder" class="p-4 my-2 rounded text-center d-none" style="border: 1px dashed var(--glass-border); background: rgba(0, 0, 0, 0.05);">
+                                    <i class="fas fa-lock fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Vui lòng nhập đầy đủ <strong>Họ tên, Số điện thoại và Địa chỉ</strong> ở phía trên để tạo mã QR thanh toán.</p>
                                 </div>
-                                <p class="text-warning mb-2" style="font-size: 0.85rem;">Nội dung chuyển khoản: <strong id="payos-desc-text" class="text-white">3FC PAYOS</strong></p>
+
+                                <div id="payos-qr-container">
+                                    <div class="qr-mockup-wrapper bg-white p-3 rounded d-inline-block mb-2 position-relative" style="box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: 2px solid #0052cc; min-width: 200px; min-height: 200px;">
+                                        <span class="badge bg-danger position-absolute" style="top: 8px; right: 8px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; border-radius: 4px; z-index: 10;">payOS</span>
+                                        <div id="payos-qr-loading" class="position-absolute top-50 start-50 translate-middle d-none" style="z-index: 5;">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Đang tải...</span>
+                                            </div>
+                                        </div>
+                                        <img id="payos-qr-image" 
+                                             src="" 
+                                             alt="PayOS QR Payment" 
+                                             style="max-width: 200px; height: auto; display: block; min-height: 150px;">
+                                    </div>
+                                    <p class="text-warning mb-2" style="font-size: 0.85rem;">Nội dung chuyển khoản: <strong id="payos-desc-text" class="text-white">3FC PAYOS</strong></p>
+                                </div>
                                 <div class="mt-2 text-muted" style="font-size: 0.8rem; margin-bottom: 0.5rem;">
                                     <i class="fas fa-shield-alt text-success me-1"></i> Giao dịch được bảo mật và xử lý tự động bởi PayOS
                                 </div>
@@ -297,14 +344,35 @@ require_once __DIR__ . '/../includes/header.php';
                         <?php if (in_array('QR', $enabled_payment_methods, true)): ?>
                             <div id="payment-details-QR" class="payment-details-panel glass-panel p-3 mt-3 <?php echo $selected_payment_method === 'QR' ? '' : 'd-none'; ?> text-center">
                                 <p class="text-white mb-2" style="font-size: 0.9rem;">Quét mã VietQR bằng ứng dụng Ngân hàng (Mobile Banking) để thanh toán</p>
-                                <div class="qr-mockup-wrapper bg-white p-3 rounded d-inline-block mb-2" style="box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
-                                    <img id="vietqr-image" 
-                                         src="https://img.vietqr.io/image/<?php echo htmlspecialchars(getenv('MERCHANT_BANK_ID') ?: 'vietinbank'); ?>-<?php echo htmlspecialchars(getenv('MERCHANT_ACCOUNT_NO') ?: '113366668888'); ?>-compact2.png?amount=<?php echo $total_price; ?>&addInfo=3FC%20QR%20<?php echo time(); ?>&accountName=<?php echo urlencode(getenv('MERCHANT_ACCOUNT_NAME') ?: '3FC SHOP'); ?>" 
-                                         alt="VietQR Payment" 
-                                         style="max-width: 200px; height: auto; display: block;"
-                                         data-order-time="<?php echo time(); ?>">
+                                
+                                <div id="vietqr-placeholder" class="p-4 my-2 rounded text-center d-none" style="border: 1px dashed var(--glass-border); background: rgba(0, 0, 0, 0.05);">
+                                    <i class="fas fa-lock fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0" style="font-size: 0.9rem;">Vui lòng nhập đầy đủ <strong>Họ tên, Số điện thoại và Địa chỉ</strong> ở phía trên để tạo mã QR thanh toán.</p>
                                 </div>
-                                <p class="text-warning mb-0" style="font-size: 0.85rem;">Nội dung chuyển khoản: <strong id="vietqr-desc-text" class="text-white">3FC QR <?php echo time(); ?></strong></p>
+
+                                <div id="vietqr-qr-container" class="d-none">
+                                    <div class="qr-mockup-wrapper bg-white p-3 rounded d-inline-block mb-2" style="box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                                        <img id="vietqr-image" 
+                                             src="" 
+                                             data-src="https://img.vietqr.io/image/<?php echo htmlspecialchars(getenv('MERCHANT_BANK_ID') ?: 'vietinbank'); ?>-<?php echo htmlspecialchars(getenv('MERCHANT_ACCOUNT_NO') ?: '113366668888'); ?>-compact2.png?amount=<?php echo $total_price; ?>&addInfo=<?php echo urlencode('Thanh toan don hang #' . $next_order_id); ?>&accountName=<?php echo urlencode(getenv('MERCHANT_ACCOUNT_NAME') ?: '3FC SHOP'); ?>" 
+                                             alt="VietQR Payment" 
+                                             style="max-width: 200px; height: auto; display: block;"
+                                             data-order-time="<?php echo time(); ?>">
+                                    </div>
+                                    <p class="text-warning mb-2" style="font-size: 0.85rem;">Nội dung chuyển khoản: <strong id="vietqr-desc-text" class="text-white">Thanh toan don hang #<?php echo $next_order_id; ?></strong></p>
+                                </div>
+                                
+                                <button type="button" class="btn btn-warning-custom w-100 py-2 mt-2" id="btn-simulate-qr-payment">
+                                    <i class="fas fa-check-circle me-1"></i> Tôi đã chuyển khoản thành công
+                                </button>
+
+                                <div id="qr-payment-error-alert" class="alert alert-danger mt-2 d-none" style="font-size: 0.9rem; border-radius: 8px; border: 1px solid var(--danger-border); background: var(--danger-bg); color: var(--danger-color);">
+                                    <i class="fas fa-exclamation-circle me-1"></i> Thanh toán bị hoãn lại! Vui lòng điền đầy đủ Họ tên, Số điện thoại và Địa chỉ nhận hàng ở phía trên trước khi xác nhận chuyển khoản.
+                                </div>
+
+                                <div id="qr-payment-status-alert" class="alert alert-success mt-2 d-none" style="font-size: 0.9rem; border-radius: 8px;">
+                                    <i class="fas fa-check-circle me-1"></i> Thanh toán thành công qua QR Code! Đang hoàn tất đơn hàng...
+                                </div>
                             </div>
                         <?php endif; ?>
 
@@ -354,7 +422,7 @@ require_once __DIR__ . '/../includes/header.php';
                             </div>
                         <?php endif; ?>
                         
-                        <button type="submit" class="btn btn-primary-custom w-100 py-3 mt-4">
+                        <button type="submit" class="btn btn-primary-custom w-100 py-3 mt-4" id="btn-submit-order">
                             <i class="fas fa-check-double me-2"></i> Xác nhận đặt hàng
                         </button>
                     </form>
@@ -366,20 +434,28 @@ require_once __DIR__ . '/../includes/header.php';
                 <div class="glass-panel p-4">
                     <h4 class="text-white mb-4" style="font-family: var(--font-heading);"><i class="fas fa-receipt text-warning me-2"></i>Chi tiết đơn hàng</h4>
                     
-                    <div class="checkout-items mb-4" style="max-height: 350px; overflow-y: auto;">
+                    <div class="checkout-items mb-4" style="max-height: 380px; overflow-y: auto; padding-right: 5px;">
                         <?php foreach ($cart_items as $item): ?>
-                            <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom cart-item-row" data-book-id="<?php echo $item['book_id']; ?>" style="border-color: var(--glass-border) !important;">
-                                <div style="max-width: 65%;">
-                                    <h6 class="text-white mb-1" style="font-size: 0.95rem; font-weight: 500;"><?php echo htmlspecialchars($item['title']); ?></h6>
+                            <div class="d-flex align-items-center mb-3 pb-3 border-bottom cart-item-row" data-book-id="<?php echo $item['book_id']; ?>" style="border-color: var(--glass-border) !important;">
+                                <div class="checkout-item-img-wrapper me-3">
+                                    <img src="<?php echo htmlspecialchars(!empty($item['image']) ? ((strpos($item['image'], 'http') === 0 || strpos($item['image'], 'uploads/') === 0) ? $item['image'] : 'uploads/' . $item['image']) : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500'); ?>" class="checkout-book-img" alt="<?php echo htmlspecialchars($item['title']); ?>">
+                                </div>
+                                <div class="flex-grow-1" style="max-width: 55%;">
+                                    <h6 class="text-white mb-1 checkout-item-title"><?php echo htmlspecialchars($item['title']); ?></h6>
                                     <div class="d-flex align-items-center gap-2 mt-1">
-                                        <!-- Interactive Quantity Adjustment -->
-                                        <button type="button" class="btn btn-sm btn-outline-light py-0 px-2 qty-btn minus-btn" style="border-radius: 4px; line-height: 1; font-weight: bold; background: rgba(255,255,255,0.05); border-color: var(--glass-border);">-</button>
-                                        <input type="text" class="qty-input text-center text-white" value="<?php echo $item['quantity']; ?>" data-price="<?php echo $item['price']; ?>" readonly style="width: 32px; height: 24px; background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border); border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
-                                        <button type="button" class="btn btn-sm btn-outline-light py-0 px-2 qty-btn plus-btn" style="border-radius: 4px; line-height: 1; font-weight: bold; background: rgba(255,255,255,0.05); border-color: var(--glass-border);">+</button>
-                                        <small class="text-muted ms-1">x <?php echo number_format($item['price'], 0, ',', '.'); ?>đ</small>
+                                        <?php if ($is_buy_now): ?>
+                                            <span class="text-muted" style="font-size: 0.9rem;">Số lượng: <strong>1</strong></span>
+                                            <small class="text-muted ms-1" style="font-size: 0.8rem;">x <?php echo number_format($item['price'], 0, ',', '.'); ?>đ</small>
+                                        <?php else: ?>
+                                            <!-- Interactive Quantity Adjustment -->
+                                            <button type="button" class="btn btn-sm qty-btn minus-btn">-</button>
+                                            <input type="text" class="qty-input text-center text-white" value="<?php echo $item['quantity']; ?>" data-price="<?php echo $item['price']; ?>" readonly>
+                                            <button type="button" class="btn btn-sm qty-btn plus-btn">+</button>
+                                            <small class="text-muted ms-1" style="font-size: 0.8rem;">x <?php echo number_format($item['price'], 0, ',', '.'); ?>đ</small>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
-                                <span class="text-white item-total-display" style="font-weight: 500; font-size: 0.95rem;"><?php echo number_format($item['price'] * $item['quantity'], 0, ',', '.'); ?> đ</span>
+                                <span class="text-white item-total-display ms-auto" style="font-weight: 600; font-size: 1.05rem;"><?php echo number_format($item['price'] * $item['quantity'], 0, ',', '.'); ?> đ</span>
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -402,6 +478,7 @@ require_once __DIR__ . '/../includes/header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const nextOrderId = '<?php echo $next_order_id; ?>';
     // 1. Tương tác số lượng bằng AJAX
     const cartItemRows = document.querySelectorAll('.cart-item-row');
     cartItemRows.forEach(row => {
@@ -445,7 +522,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         setTimeout(() => {
                             row.remove();
                             if (document.querySelectorAll('.cart-item-row').length === 0) {
-                                window.location.href = '../index.php';
+                                window.location.href = 'index.php';
                             }
                         }, 300);
                     } else {
@@ -464,7 +541,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         const merchantAccount = document.getElementById('merchant-account-no')?.value || '113366668888';
                         const merchantName = document.getElementById('merchant-account-name')?.value || '3FC SHOP';
                         
-                        qrImg.src = `https://img.vietqr.io/image/${merchantBank}-${merchantAccount}-compact2.png?amount=${amount}&addInfo=3FC%20QR%20${orderTime}&accountName=${encodeURIComponent(merchantName)}`;
+                        qrImg.src = `https://img.vietqr.io/image/${merchantBank}-${merchantAccount}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent('Thanh toan don hang #' + nextOrderId)}&accountName=${encodeURIComponent(merchantName)}`;
                     }
                     
                     // Nếu đang ở phương thức PayOS, tải lại QR để cập nhật số tiền mới
@@ -479,31 +556,40 @@ document.addEventListener('DOMContentLoaded', function() {
                         badge.innerText = data.cart_count;
                     }
                 } else {
-                    alert(data.message);
+                    showToast(data.message, 'danger');
                 }
             })
             .catch(err => {
                 console.error(err);
-                alert('Có lỗi xảy ra khi cập nhật số lượng.');
+                showToast('Có lỗi xảy ra khi cập nhật số lượng.', 'danger');
             })
             .finally(() => {
-                // Mở khóa nút submit
+                // Mở khóa nút submit và kiểm tra lại trạng thái ẩn/hiện theo phương thức thanh toán
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<i class="fas fa-check-double me-2"></i> Xác nhận đặt hàng';
+                    
+                    const currentPayment = document.querySelector('input[name="payment_method"]:checked')?.value;
+                    if (currentPayment === 'PayOS' || currentPayment === 'QR') {
+                        submitBtn.classList.add('d-none');
+                    } else {
+                        submitBtn.classList.remove('d-none');
+                    }
                 }
             });
         };
         
-        minusBtn.addEventListener('click', function() {
-            const currentQty = parseInt(qtyInput.value);
-            updateQty(currentQty - 1);
-        });
-        
-        plusBtn.addEventListener('click', function() {
-            const currentQty = parseInt(qtyInput.value);
-            updateQty(currentQty + 1);
-        });
+        if (minusBtn && plusBtn && qtyInput) {
+            minusBtn.addEventListener('click', function() {
+                const currentQty = parseInt(qtyInput.value);
+                updateQty(currentQty - 1);
+            });
+            
+            plusBtn.addEventListener('click', function() {
+                const currentQty = parseInt(qtyInput.value);
+                updateQty(currentQty + 1);
+            });
+        }
     });
 
     // 2. Xử lý thanh toán PayOS (Hiển thị QR phía dưới & Polling ngầm)
@@ -556,9 +642,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const spinner = document.getElementById('payos-qr-loading');
         const tempOrderInput = document.getElementById('temp-order-code');
         const alertBox = document.getElementById('payos-payment-status-alert');
+        const payosQrContainer = document.getElementById('payos-qr-container');
+        const payosPlaceholder = document.getElementById('payos-placeholder');
         
         if (!payosQrImg) return;
         
+        // Kiểm tra thông tin giao hàng trước khi tạo QR PayOS
+        const fullnameVal = document.getElementById('fullname')?.value.trim() || '';
+        const phoneVal = document.getElementById('phone')?.value.trim() || '';
+        const addressVal = document.getElementById('address')?.value.trim() || '';
+        const isComplete = fullnameVal !== '' && phoneVal !== '' && addressVal !== '';
+
+        if (!isComplete) {
+            if (payosQrContainer) payosQrContainer.classList.add('d-none');
+            if (payosPlaceholder) payosPlaceholder.classList.remove('d-none');
+            if (spinner) spinner.classList.add('d-none');
+            stopPayOSPolling();
+            return;
+        }
+
+        if (payosQrContainer) payosQrContainer.classList.remove('d-none');
+        if (payosPlaceholder) payosPlaceholder.classList.add('d-none');
+
         isQrLoading = true;
         if (spinner) spinner.classList.remove('d-none');
         if (alertBox) {
@@ -586,11 +691,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     payosQrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.qrCode)}`;
                 } else {
                     // Fallback nếu có
-                    payosQrImg.src = `https://img.vietqr.io/image/${data.bin}-${data.accountNumber}-compact2.png?amount=${data.amount}&addInfo=${encodeURIComponent(data.description)}&accountName=${encodeURIComponent(data.accountName)}`;
+                    payosQrImg.src = `https://img.vietqr.io/image/${data.bin}-${data.accountNumber}-compact2.png?amount=${data.amount}&addInfo=${encodeURIComponent(data.displayDescription || data.description)}&accountName=${encodeURIComponent(data.accountName)}`;
                 }
                 
                 if (payosDescText) {
-                    payosDescText.innerText = data.description;
+                    payosDescText.innerText = data.displayDescription || data.description;
                 }
                 if (tempOrderInput) {
                     tempOrderInput.value = data.tempOrderCode;
@@ -624,6 +729,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const btnSubmitOrder = document.getElementById('btn-submit-order');
+
     paymentCards.forEach(card => {
         card.addEventListener('click', function() {
             paymentCards.forEach(c => c.classList.remove('active'));
@@ -642,18 +749,127 @@ document.addEventListener('DOMContentLoaded', function() {
                 panel.classList.remove('d-none');
             }
 
-            if (selectedVal === 'PayOS') {
-                loadPayOSQr();
+            if (selectedVal === 'PayOS' || selectedVal === 'QR') {
+                if (btnSubmitOrder) btnSubmitOrder.classList.add('d-none');
+                updateQrVisibility();
             } else {
+                if (btnSubmitOrder) btnSubmitOrder.classList.remove('d-none');
                 stopPayOSPolling();
+            }
+
+            // Reset QR simulation button if switching away from QR
+            if (selectedVal !== 'QR') {
+                const btnSimulateQr = document.getElementById('btn-simulate-qr-payment');
+                const qrAlertBox = document.getElementById('qr-payment-status-alert');
+                const qrErrorBox = document.getElementById('qr-payment-error-alert');
+                const qrPaidInput = document.getElementById('qr-paid-verified');
+                if (btnSimulateQr) {
+                    btnSimulateQr.disabled = false;
+                    btnSimulateQr.className = 'btn btn-warning-custom w-100 py-2 mt-2';
+                    btnSimulateQr.innerHTML = '<i class="fas fa-check-circle me-1"></i> Tôi đã chuyển khoản thành công';
+                }
+                if (qrAlertBox) qrAlertBox.classList.add('d-none');
+                if (qrErrorBox) qrErrorBox.classList.add('d-none');
+                if (qrPaidInput) qrPaidInput.value = '0';
             }
         });
     });
 
-    // Tự động load QR và polling nếu PayOS được chọn mặc định lúc khởi chạy
+    // Tự động load QR và polling nếu PayOS hoặc QR được chọn mặc định lúc khởi chạy
     const initialPayment = document.querySelector('input[name="payment_method"]:checked')?.value;
-    if (initialPayment === 'PayOS') {
-        loadPayOSQr();
+    if (initialPayment === 'PayOS' || initialPayment === 'QR') {
+        if (btnSubmitOrder) btnSubmitOrder.classList.add('d-none');
+        updateQrVisibility();
+    } else {
+        if (btnSubmitOrder) btnSubmitOrder.classList.remove('d-none');
+    }
+
+    // Xử lý mô phỏng thanh toán QR Code cá nhân (VietQR)
+    const btnSimulateQr = document.getElementById('btn-simulate-qr-payment');
+    const qrAlertBox = document.getElementById('qr-payment-status-alert');
+    const qrErrorBox = document.getElementById('qr-payment-error-alert');
+    const qrPaidInput = document.getElementById('qr-paid-verified');
+    const fullnameInput = document.getElementById('fullname');
+    const phoneInput = document.getElementById('phone');
+    const addressInput = document.getElementById('address');
+    
+    if (btnSimulateQr) {
+        btnSimulateQr.addEventListener('click', function() {
+            // Lấy thông tin giao hàng để kiểm tra
+            const fullnameVal = fullnameInput ? fullnameInput.value.trim() : '';
+            const phoneVal = phoneInput ? phoneInput.value.trim() : '';
+            const addressVal = addressInput ? addressInput.value.trim() : '';
+            
+            // Reset trạng thái highlight lỗi cũ
+            if (fullnameInput) fullnameInput.classList.remove('is-invalid');
+            if (phoneInput) phoneInput.classList.remove('is-invalid');
+            if (addressInput) addressInput.classList.remove('is-invalid');
+            
+            let hasError = false;
+            let firstEmptyInput = null;
+            
+            if (fullnameVal === '') {
+                if (fullnameInput) fullnameInput.classList.add('is-invalid');
+                hasError = true;
+                if (!firstEmptyInput) firstEmptyInput = fullnameInput;
+            }
+            if (phoneVal === '') {
+                if (phoneInput) phoneInput.classList.add('is-invalid');
+                hasError = true;
+                if (!firstEmptyInput) firstEmptyInput = phoneInput;
+            }
+            if (addressVal === '') {
+                if (addressInput) addressInput.classList.add('is-invalid');
+                hasError = true;
+                if (!firstEmptyInput) firstEmptyInput = addressInput;
+            }
+            
+            if (hasError) {
+                // Hiển thị thông báo hoãn thanh toán, ẩn thông báo thành công nếu có
+                if (qrErrorBox) qrErrorBox.classList.remove('d-none');
+                if (qrAlertBox) qrAlertBox.classList.add('d-none');
+                
+                // Cuộn mượt đến trường trống đầu tiên và focus
+                if (firstEmptyInput) {
+                    firstEmptyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(function() {
+                        firstEmptyInput.focus();
+                    }, 500);
+                }
+                return; // Dừng việc mô phỏng thanh toán
+            }
+            
+            // Nếu hợp lệ, ẩn cảnh báo lỗi cũ
+            if (qrErrorBox) qrErrorBox.classList.add('d-none');
+            
+            // Disable button và đổi trạng thái chờ
+            btnSimulateQr.disabled = true;
+            btnSimulateQr.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Đang xác thực giao dịch chuyển khoản...';
+            
+            setTimeout(function() {
+                // Đổi nút thành trạng thái thành công
+                btnSimulateQr.className = 'btn btn-success w-100 py-2 mt-2';
+                btnSimulateQr.innerHTML = '<i class="fas fa-check me-2"></i> Xác thực thành công';
+                
+                // Hiển thị thông báo thành công
+                if (qrAlertBox) {
+                    qrAlertBox.classList.remove('d-none');
+                }
+                
+                // Ghi nhận trạng thái thanh toán thành công
+                if (qrPaidInput) {
+                    qrPaidInput.value = '1';
+                }
+                
+                // Tự động submit form sau 1.5 giây
+                setTimeout(function() {
+                    const checkoutForm = document.getElementById('checkout-form');
+                    if (checkoutForm) {
+                        checkoutForm.submit();
+                    }
+                }, 1500);
+            }, 2000);
+        });
     }
 
     // 3. Hiển thị thông tin Thẻ tín dụng mô phỏng thời gian thực
@@ -698,7 +914,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 4. Kiểm thử submit form: Nếu chọn PayOS nhưng chưa thanh toán -> chặn submit và báo lỗi
+    // 4. Kiểm thử submit form: Nếu chọn PayOS hoặc QR nhưng chưa thanh toán -> chặn submit và báo lỗi
     const checkoutForm = document.getElementById('checkout-form');
     if (checkoutForm) {
         checkoutForm.addEventListener('submit', function(e) {
@@ -706,12 +922,60 @@ document.addEventListener('DOMContentLoaded', function() {
             if (selectedPayment === 'PayOS') {
                 const paidVerified = document.getElementById('payos-paid-verified')?.value;
                 if (paidVerified !== '1') {
-                    alert('Vui lòng quét mã QR PayOS ở phía dưới, thực hiện chuyển tiền và đợi hệ thống báo "Thanh toán thành công" trước khi xác nhận đơn hàng.');
+                    showToast('Vui lòng quét mã QR PayOS ở phía dưới, thực hiện chuyển tiền và đợi hệ thống báo "Thanh toán thành công" trước khi xác nhận đơn hàng.', 'warning');
+                    e.preventDefault();
+                }
+            } else if (selectedPayment === 'QR') {
+                const qrPaidVerified = document.getElementById('qr-paid-verified')?.value;
+                if (qrPaidVerified !== '1') {
+                    showToast('Vui lòng quét mã VietQR và nhấn nút "Tôi đã chuyển khoản thành công" để xác nhận thanh toán trước khi hoàn tất đơn hàng.', 'warning');
                     e.preventDefault();
                 }
             }
         });
     }
+
+    // 5. Kiểm tra thời gian thực để ẩn/hiển thị QR code tùy thuộc thông tin giao hàng
+    function updateQrVisibility() {
+        const fullnameVal = fullnameInput ? fullnameInput.value.trim() : '';
+        const phoneVal = phoneInput ? phoneInput.value.trim() : '';
+        const addressVal = addressInput ? addressInput.value.trim() : '';
+        const isComplete = fullnameVal !== '' && phoneVal !== '' && addressVal !== '';
+
+        // 5.1 Cập nhật hiển thị VietQR cá nhân
+        const vietqrContainer = document.getElementById('vietqr-qr-container');
+        const vietqrPlaceholder = document.getElementById('vietqr-placeholder');
+        const vietqrImg = document.getElementById('vietqr-image');
+
+        if (vietqrContainer && vietqrPlaceholder) {
+            if (isComplete) {
+                vietqrContainer.classList.remove('d-none');
+                vietqrPlaceholder.classList.add('d-none');
+                if (vietqrImg && (!vietqrImg.src || vietqrImg.src === '')) {
+                    vietqrImg.src = vietqrImg.getAttribute('data-src');
+                }
+            } else {
+                vietqrContainer.classList.add('d-none');
+                vietqrPlaceholder.classList.remove('d-none');
+                if (vietqrImg) {
+                    vietqrImg.src = '';
+                }
+            }
+        }
+
+        // 5.2 Cập nhật hiển thị PayOS QR
+        const selectedPayment = document.querySelector('input[name="payment_method"]:checked')?.value;
+        if (selectedPayment === 'PayOS') {
+            loadPayOSQr();
+        }
+    }
+
+    if (fullnameInput) fullnameInput.addEventListener('input', updateQrVisibility);
+    if (phoneInput) phoneInput.addEventListener('input', updateQrVisibility);
+    if (addressInput) addressInput.addEventListener('input', updateQrVisibility);
+
+    // Chạy cập nhật trạng thái QR hiển thị ngay khi trang load
+    updateQrVisibility();
 });
 </script>
 

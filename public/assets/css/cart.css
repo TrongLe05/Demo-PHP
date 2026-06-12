@@ -5,84 +5,142 @@
    ========================================================================= */
 
 .cart-card {
-  padding: 2rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--card-shadow);
+  padding: 2.2rem;
   margin-bottom: 2rem;
 }
 
 .cart-table {
   color: var(--text-main);
   border-collapse: separate;
-  border-spacing: 0 15px;
+  border-spacing: 0 12px;
 }
 
 .cart-table th {
   border: none;
   color: var(--text-muted);
-  font-weight: 500;
-  padding: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  padding: 0.8rem 1.2rem;
 }
 
 .cart-row {
   background: var(--surface-subtle);
-  border-radius: 12px;
+  transition: var(--transition-smooth);
 }
 
 .cart-row td {
-  padding: 1rem;
+  padding: 1.2rem;
   vertical-align: middle;
   border-top: 1px solid var(--glass-border);
   border-bottom: 1px solid var(--glass-border);
+  transition: var(--transition-smooth);
 }
 
 .cart-row td:first-child {
   border-left: 1px solid var(--glass-border);
-  border-top-left-radius: 12px;
-  border-bottom-left-radius: 12px;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
 }
 
 .cart-row td:last-child {
   border-right: 1px solid var(--glass-border);
-  border-top-right-radius: 12px;
-  border-bottom-right-radius: 12px;
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
+}
+
+/* Hiệu ứng hover cho từng dòng sản phẩm trong giỏ hàng */
+.cart-row:hover {
+  transform: scale(1.005) translateY(-2px);
+}
+
+.cart-row:hover td {
+  background: var(--surface-strong);
+  border-color: var(--glass-highlight);
 }
 
 .cart-book-img {
-  width: 60px;
-  height: 85px;
+  width: 65px;
+  min-width: 65px;
+  height: 90px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid var(--glass-border);
-}
-
-.cart-qty-input {
-  width: 60px;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--glass-border);
-  color: var(--text-main);
-  border-radius: 6px;
-  padding: 0.25rem;
-}
-
-.btn-remove {
-  color: #ef4444;
-  background: none;
-  border: none;
-  font-size: 1.1rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   transition: var(--transition-smooth);
 }
 
+.cart-row:hover .cart-book-img {
+  transform: scale(1.04);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.22);
+}
+
+.cart-qty-input {
+  width: 55px;
+  height: 34px;
+  text-align: center;
+  background: var(--surface-subtle);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  border-radius: 8px;
+  font-weight: 600;
+  transition: var(--transition-smooth);
+}
+
+.cart-qty-input:focus {
+  background: var(--surface-strong);
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.btn-remove {
+  color: var(--danger-color);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: var(--transition-smooth);
+  cursor: pointer;
+}
+
 .btn-remove:hover {
-  color: #f87171;
-  transform: scale(1.1);
+  background: #ef4444;
+  color: #ffffff !important;
+  border-color: #ef4444;
+  transform: scale(1.1) rotate(15deg);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .qty-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--glass-border) !important;
+  background: var(--surface-subtle) !important;
+  color: var(--text-main) !important;
+  font-weight: 600;
   transition: var(--transition-smooth);
 }
 
 .qty-btn:hover {
   background: var(--accent-color) !important;
-  color: var(--bg-primary) !important;
+  color: #ffffff !important;
   border-color: var(--accent-color) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(196, 90, 45, 0.2);
 }
