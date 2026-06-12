@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/db_helper.php';
+require_once __DIR__ . '/../includes/db_helper.php';
 
 // Hủy bỏ tất cả session
 $_SESSION = [];
@@ -14,6 +14,6 @@ if (ini_get("session.use_cookies")) {
 
 session_destroy();
 
-header("Location: index.php");
+header("Location: ../index.php");
 exit;
 ?>

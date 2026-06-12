@@ -1,9 +1,9 @@
 <?php
-require_once __DIR__ . '/db_helper.php';
+require_once __DIR__ . '/../includes/db_helper.php';
 
 // Đã đăng nhập rồi thì chuyển về trang chủ
 if (isset($_SESSION['user_id'])) {
-    header("Location: index.php");
+    header("Location: ../index.php");
     exit;
 }
 
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user['role'] === 'admin') {
                 header("Location: admin.php");
             } else {
-                header("Location: index.php");
+                header("Location: ../index.php");
             }
             exit;
         } else {
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="container">
@@ -110,5 +110,5 @@ require_once __DIR__ . '/header.php';
 </div>
 
 <?php
-require_once __DIR__ . '/footer.php';
+require_once __DIR__ . '/../includes/footer.php';
 ?>

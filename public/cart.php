@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/db_helper.php';
+require_once __DIR__ . '/../includes/db_helper.php';
 
 // Yêu cầu đăng nhập trước khi xem giỏ hàng
 if (!isset($_SESSION['user_id'])) {
@@ -42,11 +42,29 @@ if (isset($_GET['remove'])) {
     exit;
 }
 
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="container my-5">
     <h2 class="section-title mb-4">Giỏ Hàng Của Bạn</h2>
+
+    <!-- Thanh tiến trình mua hàng -->
+    <div class="steps-indicator">
+        <div class="step-node active">
+            <div class="step-circle">1</div>
+            <div class="step-label">Giỏ hàng</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-node">
+            <div class="step-circle">2</div>
+            <div class="step-label">Thanh toán</div>
+        </div>
+        <div class="step-line"></div>
+        <div class="step-node">
+            <div class="step-circle">3</div>
+            <div class="step-label">Hoàn tất</div>
+        </div>
+    </div>
 
     <!-- Thông báo kết quả thao tác -->
     <?php if (isset($_GET['status']) && $_GET['status'] == 'updated'): ?>
@@ -66,10 +84,11 @@ require_once __DIR__ . '/header.php';
             <i class="fas fa-shopping-cart text-muted fa-4x mb-3"></i>
             <h4 class="text-white">Giỏ hàng của bạn đang trống</h4>
             <p class="text-muted">Hãy lấp đầy nó bằng những cuốn sách hay từ cửa hàng của chúng tôi.</p>
-            <a href="index.php" class="btn btn-primary-custom mt-3"><i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm</a>
+            <a href="../index.php" class="btn btn-primary-custom mt-3"><i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm</a>
         </div>
     <?php else: ?>
         <form action="cart.php" method="POST">
+            <input type="hidden" name="update_cart" value="1">
             <div class="row">
                 <!-- Danh sách mặt hàng -->
                 <div class="col-lg-8">
@@ -77,7 +96,7 @@ require_once __DIR__ . '/header.php';
                         <table class="table cart-table align-middle">
                             <thead>
                                 <tr>
-                                    <th scope="col" style="width: 100px;">Bìa sách</th>
+                                    <th scope="col" style="width: 50px;"></th>
                                     <th scope="col">Tên sách / Tác giả</th>
                                     <th scope="col" style="width: 120px;">Giá bán</th>
                                     <th scope="col" style="width: 120px;">Số lượng</th>
@@ -98,7 +117,7 @@ require_once __DIR__ . '/header.php';
                                     <tr class="cart-row">
                                         <td>
                                             <a href="book-detail.php?id=<?php echo $book['id']; ?>">
-                                                <img src="<?php echo htmlspecialchars($book['image']); ?>" class="cart-book-img" alt="<?php echo htmlspecialchars($book['title']); ?>">
+                                                <img src="<?php echo htmlspecialchars($book['image']); ?>" alt="<?php echo htmlspecialchars($book['title']); ?>" class="cart-book-img">
                                             </a>
                                         </td>
                                         <td>
@@ -113,7 +132,7 @@ require_once __DIR__ . '/header.php';
                                             <span><?php echo number_format($book['price'], 0, ',', '.'); ?> đ</span>
                                         </td>
                                         <td>
-                                            <input type="number" name="quantities[<?php echo $book['id']; ?>]" value="<?php echo $qty; ?>" min="1" max="100" class="cart-qty-input">
+                                            <input type="number" id="qtyInput-<?php echo $book['id']; ?>" name="quantities[<?php echo $book['id']; ?>]" value="<?php echo $qty; ?>" min="1" max="100" class="cart-qty-input" onchange="this.form.submit()">
                                         </td>
                                         <td>
                                             <strong class="text-white"><?php echo number_format($subtotal, 0, ',', '.'); ?> đ</strong>
@@ -129,8 +148,8 @@ require_once __DIR__ . '/header.php';
                         </table>
                         
                         <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-3">
-                            <a href="index.php" class="btn btn-secondary-custom"><i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm</a>
-                            <button type="submit" name="update_cart" class="btn btn-secondary-custom"><i class="fas fa-sync-alt me-2"></i>Cập nhật giỏ hàng</button>
+                            <a href="../index.php" class="btn btn-secondary-custom"><i class="fas fa-arrow-left me-2"></i>Tiếp tục mua sắm</a>
+                            <!-- <button type="submit" name="update_cart" class="btn btn-secondary-custom"><i class="fas fa-sync-alt me-2"></i>Cập nhật giỏ hàng</button> -->
                         </div>
                     </div>
                 </div>
@@ -163,6 +182,13 @@ require_once __DIR__ . '/header.php';
     <?php endif; ?>
 </div>
 
+<script>
+    const qtyInputs = document.getElemenetById('qtyInput');
+
+
+
+</script>
+
 <?php
-require_once __DIR__ . '/footer.php';
+require_once __DIR__ . '/../includes/footer.php';
 ?>

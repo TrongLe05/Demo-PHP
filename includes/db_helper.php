@@ -1,13 +1,5 @@
 <?php
 // =========================================================================
-// CONFIGURATION & DATABASE CONNECTIVITY (SOLID: Single Responsibility)
-// =========================================================================
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'ban_sach_online');
-define('DB_USER', 'root');
-define('DB_PASS', ''); // Mặc định XAMPP trống
-
-// =========================================================================
 // ENVIRONMENT CONFIGURATION LOADER (SOLID: Single Responsibility)
 // =========================================================================
 function load_env_file(string $filePath): void {
@@ -33,12 +25,58 @@ function load_env_file(string $filePath): void {
     }
 }
 
-// Tải tệp cấu hình .env
-load_env_file(__DIR__ . '/.env');
+// Tải tệp cấu hình .env tại thư mục gốc của dự án
+load_env_file(dirname(__DIR__) . '/.env');
+
+// =========================================================================
+// CONFIGURATION & DATABASE CONNECTIVITY (SOLID: Single Responsibility)
+// =========================================================================
+define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+define('DB_NAME', getenv('DB_NAME') ?: 'ban_sach_online');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') !== false ? getenv('DB_PASS') : '');
 
 define('PAYOS_CLIENT_ID', getenv('PAYOS_CLIENT_ID') ?: 'your_client_id');
 define('PAYOS_API_KEY', getenv('PAYOS_API_KEY') ?: 'your_api_key');
 define('PAYOS_CHECKSUM_KEY', getenv('PAYOS_CHECKSUM_KEY') ?: 'your_checksum_key');
+
+function env_bool(string $key, bool $default = false): bool {
+    $value = getenv($key);
+    if ($value === false || $value === '') {
+        return $default;
+    }
+    return in_array(strtolower(trim($value)), ['1', 'true', 'yes', 'on'], true);
+}
+
+function env_string(string $key, string $default = ''): string {
+    $value = getenv($key);
+    return $value !== false && $value !== '' ? trim($value) : $default;
+}
+
+function get_enabled_payment_methods(): array {
+    $methods = [];
+
+    if (env_bool('PAYMENT_METHOD_COD_ENABLED', true)) {
+        $methods[] = 'COD';
+    }
+    if (env_bool('PAYMENT_METHOD_PAYOS_ENABLED', true)) {
+        $methods[] = 'PayOS';
+    }
+    if (env_bool('PAYMENT_METHOD_CARD_ENABLED', true)) {
+        $methods[] = 'Thẻ tín dụng';
+    }
+    if (env_bool('PAYMENT_METHOD_QR_ENABLED', true)) {
+        $methods[] = 'QR';
+    }
+
+    return !empty($methods) ? $methods : ['COD'];
+}
+
+function get_default_payment_method(): string {
+    $default = env_string('DEFAULT_PAYMENT_METHOD', 'COD');
+    $enabled = get_enabled_payment_methods();
+    return in_array($default, $enabled, true) ? $default : ($enabled[0] ?? 'COD');
+}
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

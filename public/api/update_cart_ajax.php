@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-require_once __DIR__ . '/db_helper.php';
+require_once __DIR__ . '/../../includes/db_helper.php';
 
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['user_id'])) {

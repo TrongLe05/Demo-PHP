@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/db_helper.php';
+require_once __DIR__ . '/../includes/db_helper.php';
 
 // Kiểm tra quyền Admin
 if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
@@ -155,7 +155,7 @@ if ($action === 'edit') {
 $books = get_books();
 $orders = get_orders();
 
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="container my-5">
@@ -204,14 +204,14 @@ require_once __DIR__ . '/header.php';
                 <tbody>
                     <?php if (empty($books)): ?>
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">Chưa có cuốn sách nào trong cửa hàng.</td>
+                             <td colspan="8" class="text-center text-muted py-4">Chưa có cuốn sách nào trong cửa hàng.</td>
                         </tr>
                     <?php else: ?>
                         <?php foreach ($books as $b): ?>
-                            <tr>
+                             <tr>
                                 <td><?php echo $b['id']; ?></td>
                                 <td>
-                                    <img src="<?php echo htmlspecialchars($b['image']); ?>" style="width: 45px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid var(--glass-border);" alt="">
+                                    <img src="<?php echo htmlspecialchars(!empty($b['image']) ? ((strpos($b['image'], 'http') === 0 || strpos($b['image'], 'uploads/') === 0) ? $b['image'] : 'uploads/' . $b['image']) : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500'); ?>" class="admin-book-img" alt="<?php echo htmlspecialchars($b['title']); ?>">
                                 </td>
                                 <td>
                                     <strong class="text-white"><?php echo htmlspecialchars($b['title']); ?></strong><br>
@@ -502,5 +502,5 @@ require_once __DIR__ . '/header.php';
 </div>
 
 <?php
-require_once __DIR__ . '/footer.php';
+require_once __DIR__ . '/../includes/footer.php';
 ?>

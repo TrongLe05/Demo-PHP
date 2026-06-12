@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
 :root {
     --bg-primary: #f8fafc;
@@ -13,8 +13,8 @@
     --glass-border: rgba(0, 0, 0, 0.08);
     --glass-highlight: rgba(255, 255, 255, 0.5);
     --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
-    --font-heading: 'Playfair Display', Georgia, serif;
-    --font-body: 'Outfit', sans-serif;
+    --font-heading: 'Lora', Georgia, serif;
+    --font-body: 'Be Vietnam Pro', sans-serif;
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -712,6 +712,405 @@ td.text-white {
     display: block;
     margin: 0 auto;
 }
+
+/* =========================================================================
+   NEW DESIGN ENHANCEMENTS: BOOKSTORES REFERENCE
+   ========================================================================= */
+
+/* Book cover placeholders */
+.book-cover-placeholder {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 5 / 7;
+    position: relative;
+    border-radius: 8px 12px 12px 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 1.5rem 1.25rem 1.25rem 1.75rem;
+    color: #ffffff !important;
+    box-shadow: 
+        5px 5px 15px rgba(0, 0, 0, 0.15),
+        inset -10px 0 20px rgba(0, 0, 0, 0.2),
+        inset 10px 0 10px rgba(255, 255, 255, 0.1);
+    transition: var(--transition-smooth);
+}
+
+.book-cover-placeholder.gradient-0 { background: linear-gradient(135deg, #4f46e5 0%, #1e1b4b 100%); }
+.book-cover-placeholder.gradient-1 { background: linear-gradient(135deg, #f97316 0%, #7c2d12 100%); }
+.book-cover-placeholder.gradient-2 { background: linear-gradient(135deg, #ec4899 0%, #701a75 100%); }
+.book-cover-placeholder.gradient-3 { background: linear-gradient(135deg, #10b981 0%, #064e3b 100%); }
+.book-cover-placeholder.gradient-4 { background: linear-gradient(135deg, #8b5cf6 0%, #4c1d95 100%); }
+
+.book-cover-placeholder .placeholder-top {
+    display: flex;
+    justify-content: flex-end;
+    z-index: 5;
+}
+
+.book-cover-placeholder .placeholder-tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ffffff !important;
+}
+
+.book-cover-placeholder .placeholder-middle {
+    margin: auto 0;
+    z-index: 5;
+}
+
+.book-cover-placeholder .placeholder-title {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin-bottom: 0.25rem;
+    color: #ffffff !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+}
+
+.book-cover-placeholder .placeholder-bottom {
+    z-index: 5;
+}
+
+.book-cover-placeholder .placeholder-author {
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.9;
+    color: #f1f5f9 !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-cover-placeholder .book-spine {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 12px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: inset -3px 0 5px rgba(0,0,0,0.2), 3px 0 5px rgba(255,255,255,0.05);
+    border-right: 1px solid rgba(0, 0, 0, 0.15);
+    z-index: 4;
+}
+
+/* Features Bar */
+.feature-item-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-smooth);
+    height: 100%;
+}
+
+.feature-item-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(99, 102, 241, 0.2);
+    box-shadow: 0 12px 25px rgba(99, 102, 241, 0.08);
+}
+
+.feature-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.08);
+    color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    margin-bottom: 1rem;
+}
+
+/* Steps progress indicator */
+.steps-indicator {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 2rem auto 3.5rem;
+    max-width: 650px;
+    padding: 0 1rem;
+}
+
+.step-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+}
+
+.step-circle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 2px solid var(--glass-border);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    transition: var(--transition-smooth);
+    box-shadow: var(--card-shadow);
+}
+
+.step-node.active .step-circle {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #ffffff !important;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+}
+
+.step-node.completed .step-circle {
+    background: #10b981;
+    border-color: #10b981;
+    color: #ffffff !important;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+.step-label {
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: var(--transition-smooth);
+}
+
+.step-node.active .step-label {
+    color: var(--text-main);
+}
+
+.step-node.completed .step-label {
+    color: #10b981;
+}
+
+.step-line {
+    flex-grow: 1;
+    height: 3px;
+    background: var(--glass-border);
+    margin: 0 -15px;
+    position: relative;
+    top: -16px;
+    z-index: 1;
+}
+
+.step-line.completed {
+    background: #10b981;
+}
+
+/* Original price crossed out */
+.original-price {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-decoration: line-through;
+    margin-right: 0.5rem;
+}
+
+.discount-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: #ef4444;
+    color: #ffffff !important;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.3);
+}
+
+/* Star rating styles */
+.rating-stars {
+    color: #f59e0b; /* Amber */
+    font-size: 0.8rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.rating-count {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: 0.25rem;
+}
+
+/* Carousel customization */
+.custom-carousel {
+    border-radius: 20px;
+    overflow: hidden;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2.5rem;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, rgba(249, 115, 22, 0.04) 100%);
+}
+
+.carousel-item-content {
+    padding: 3.5rem 6rem;
+    height: 340px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Custom Navigation Controls */
+.custom-carousel .carousel-control-prev,
+.custom-carousel .carousel-control-next {
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.8;
+    transition: var(--transition-smooth);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.custom-carousel .carousel-control-prev {
+    left: 20px;
+}
+
+.custom-carousel .carousel-control-next {
+    right: 20px;
+}
+
+.custom-carousel .carousel-control-prev:hover,
+.custom-carousel .carousel-control-next:hover {
+    background: rgba(255, 255, 255, 0.95);
+    opacity: 1;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.15);
+    transform: translateY(-50%) scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .carousel-item-content {
+        padding: 2.5rem 3.5rem;
+    }
+    .custom-carousel .carousel-control-prev {
+        left: 10px;
+    }
+    .custom-carousel .carousel-control-next {
+        right: 10px;
+    }
+}
+
+.carousel-slide-text {
+    max-width: 60%;
+}
+
+.carousel-slide-text h2 {
+    font-family: var(--font-heading);
+    font-size: 2.6rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--text-main);
+    line-height: 1.25;
+}
+
+.carousel-slide-text p {
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.carousel-slide-image {
+    width: 35%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.carousel-slide-image .mockup-cover {
+    width: 135px;
+    height: 190px;
+    border-radius: 8px;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    transform: rotate(6deg);
+    transition: var(--transition-smooth);
+}
+
+.carousel-slide-image .mockup-cover:hover {
+    transform: rotate(0deg) scale(1.06);
+}
+
+/* Related books styling */
+.related-books-section {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+/* Detail page specs table */
+.specs-table {
+    width: 100%;
+    margin-bottom: 2rem;
+    border-collapse: collapse;
+}
+
+.specs-table tr {
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.specs-table td {
+    padding: 0.8rem 0;
+    font-size: 0.95rem;
+}
+
+.specs-table td:first-child {
+    font-weight: 500;
+    color: var(--text-muted);
+    width: 40%;
+}
+
+.specs-table td:last-child {
+    color: var(--text-main);
+    font-weight: 600;
+}
+
+/* Sizing and alignment for direct order and admin book cover thumbnails */
+.order-book-img {
+    width: 40px;
+    height: 55px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--glass-border);
+    display: block;
+}
+
+.admin-book-img {
+    width: 45px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--glass-border);
+    display: block;
+}
+
 
 
 

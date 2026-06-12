@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/db_helper.php';
+require_once __DIR__ . '/../includes/db_helper.php';
 
 // Kiểm tra đăng nhập
 if (!isset($_SESSION['user_id'])) {
@@ -38,13 +38,13 @@ if (isset($_POST['cancel_order_id'])) {
 
 $orders = get_orders_by_user($user_id);
 
-require_once __DIR__ . '/header.php';
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="container my-5">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <h2 class="section-title mb-0"><i class="fas fa-box-open text-warning me-2"></i>Đơn hàng của tôi</h2>
-        <a href="index.php" class="btn btn-secondary-custom btn-sm"><i class="fas fa-shopping-basket me-2"></i>Tiếp tục mua sách</a>
+        <a href="../index.php" class="btn btn-secondary-custom btn-sm"><i class="fas fa-shopping-basket me-2"></i>Tiếp tục mua sách</a>
     </div>
 
     <!-- Thông báo kết quả hủy -->
@@ -66,7 +66,7 @@ require_once __DIR__ . '/header.php';
             <i class="fas fa-receipt text-muted fa-4x mb-3"></i>
             <h4 class="text-white">Bạn chưa đặt đơn hàng nào</h4>
             <p class="text-muted">Hãy lựa chọn cho mình những cuốn sách ưng ý nhất và tiến hành thanh toán nhé.</p>
-            <a href="index.php" class="btn btn-primary-custom mt-3"><i class="fas fa-home me-2"></i>Xem danh sách sách</a>
+            <a href="../index.php" class="btn btn-primary-custom mt-3"><i class="fas fa-home me-2"></i>Xem danh sách sách</a>
         </div>
     <?php else: ?>
         <div class="row">
@@ -153,7 +153,7 @@ require_once __DIR__ . '/header.php';
                                         <?php foreach ($order['items'] as $item): ?>
                                             <tr style="font-size: 0.9rem;">
                                                 <td>
-                                                    <img src="<?php echo htmlspecialchars($item['image']); ?>" style="width: 40px; height: 55px; object-fit: cover; border-radius: 4px; border: 1px solid var(--glass-border);" alt="">
+                                                    <img src="<?php echo htmlspecialchars(!empty($item['image']) ? ((strpos($item['image'], 'http') === 0 || strpos($item['image'], 'uploads/') === 0) ? $item['image'] : 'uploads/' . $item['image']) : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500'); ?>" class="order-book-img" alt="<?php echo htmlspecialchars($item['title']); ?>">
                                                 </td>
                                                 <td>
                                                     <strong class="text-white"><?php echo htmlspecialchars($item['title']); ?></strong>
@@ -193,5 +193,5 @@ require_once __DIR__ . '/header.php';
 </div>
 
 <?php
-require_once __DIR__ . '/footer.php';
+require_once __DIR__ . '/../includes/footer.php';
 ?>
