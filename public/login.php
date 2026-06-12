@@ -100,12 +100,6 @@ require_once __DIR__ . '/../includes/header.php';
             <span class="text-muted">Chưa có tài khoản?</span>
             <a href="register.php" class="text-warning text-decoration-none ms-1">Đăng ký ngay</a>
         </div>
-        
-        <hr style="border-color: var(--glass-border);" class="my-4">
-        
-        <div class="text-center text-muted">
-            <small>Tài khoản Quản trị mẫu:<br>Tên đăng nhập: <strong>admin</strong> (hoặc email: <strong>admin@gmail.com</strong>) / mật khẩu: <strong>123456</strong></small>
-        </div>
     </div>
 </div>
 

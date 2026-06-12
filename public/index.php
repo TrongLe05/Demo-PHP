@@ -4,13 +4,14 @@ require_once __DIR__ . '/../includes/db_helper.php';
 // Yêu cầu đăng nhập trước khi thực hiện mua hàng hoặc thêm vào giỏ hàng
 if (isset($_GET['buy_now']) || isset($_GET['add_to_cart'])) {
     if (!isset($_SESSION['user_id'])) {
-        header("Location: public/login.php?status=login_required");
+        header("Location: ./login.php?status=login_required");
         exit;
     }
 }
 
 // Xử lý Mua ngay (Buy Now)
 if (isset($_GET['buy_now'])) {
+
     $book_id = (int)$_GET['buy_now'];
     $book = get_book_by_id($book_id);
     
