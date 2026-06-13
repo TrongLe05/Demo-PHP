@@ -7,13 +7,11 @@ $base_url = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') . '/';
 // Xác định trang hiện tại để gán class active cho navbar (sử dụng SCRIPT_NAME để luôn có tên file chính xác)
 $current_page = basename($_SERVER['SCRIPT_NAME']);
 
-// Lấy danh sách thể loại từ các cuốn sách để hiển thị động trên menu
-$all_books = get_books();
+// Lấy danh sách thể loại từ cơ sở dữ liệu
+$categories_list = get_categories();
 $categories = [];
-foreach ($all_books as $cat_book) {
-    if (!in_array($cat_book['category'], $categories)) {
-        $categories[] = $cat_book['category'];
-    }
+foreach ($categories_list as $cat_row) {
+    $categories[] = $cat_row['name'];
 }
 ?>
 <!DOCTYPE html>
@@ -40,6 +38,14 @@ foreach ($all_books as $cat_book) {
         echo '    <link rel="stylesheet" href="' . $base_url . $css_file . '?v=' . $file_time . '">' . PHP_EOL;
     }
     ?>
+    <script>
+        // Khởi chạy màu giao diện lập tức trước khi tải CSS để tránh bị nhấp nháy màn hình trắng
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+    </script>
 </head>
 <body>
 
@@ -61,7 +67,7 @@ foreach ($all_books as $cat_book) {
                         <a class="nav-link dropdown-toggle <?php echo isset($_GET['category']) ? 'active' : ''; ?>" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             Thể loại
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="navbarDropdown" style="background: var(--bg-secondary); border: 1px solid var(--glass-border);">
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-custom" aria-labelledby="navbarDropdown" style="background: var(--bg-secondary); border: 1px solid var(--glass-border);">
                             <li><a class="dropdown-item" href="<?php echo $base_url; ?>index.php">Tất cả sách</a></li>
                             <li><hr class="dropdown-divider" style="border-color: var(--glass-border);"></li>
                             <?php foreach ($categories as $cat): ?>
@@ -106,7 +112,7 @@ foreach ($all_books as $cat_book) {
                             <a class="btn btn-secondary-custom dropdown-toggle" href="#" role="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="far fa-user-circle me-1"></i> Chào, <?php echo htmlspecialchars($_SESSION['user_name']); ?>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark" aria-labelledby="userDropdown" style="background: var(--bg-secondary); border: 1px solid var(--glass-border);">
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark dropdown-menu-custom" aria-labelledby="userDropdown" style="background: var(--bg-secondary); border: 1px solid var(--glass-border);">
                                 <?php if ($_SESSION['user_role'] === 'admin'): ?>
                                     <li><a class="dropdown-item" href="<?php echo $base_url; ?>admin.php"><i class="fas fa-cog me-2"></i>Quản lý cửa hàng</a></li>
                                     <li><hr class="dropdown-divider" style="border-color: var(--glass-border);"></li>
@@ -121,6 +127,12 @@ foreach ($all_books as $cat_book) {
                             <i class="fas fa-sign-in-alt me-1"></i> Đăng nhập
                         </a>
                     <?php endif; ?>
+
+                    <!-- Nút chuyển đổi giao diện Sáng/Tối -->
+                    <button id="theme-toggle" class="btn-theme-toggle" title="Đổi giao diện Sáng/Tối">
+                        <i class="fas fa-sun icon-sun"></i>
+                        <i class="fas fa-moon icon-moon"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -165,6 +177,24 @@ foreach ($all_books as $cat_book) {
             }, 400);
         }, 4000);
     }
+
+    // JavaScript xử lý chuyển đổi giao diện Sáng/Tối (Dark/Light mode)
+    document.addEventListener('DOMContentLoaded', function() {
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                document.documentElement.setAttribute('data-bs-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                
+                // Kích hoạt event custom nếu có component khác lắng nghe thay đổi giao diện
+                document.dispatchEvent(new CustomEvent('themeChanged', { detail: newTheme }));
+            });
+        }
+    });
     </script>
 
     <!-- Content Container -->

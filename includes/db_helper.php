@@ -145,7 +145,7 @@ class BookRepository {
 
     public function getAllBooks(): array {
         try {
-            $stmt = $this->db->query("SELECT * FROM books ORDER BY id DESC");
+            $stmt = $this->db->query("SELECT b.*, c.name AS category FROM books b LEFT JOIN categories c ON b.category_id = c.id ORDER BY b.id DESC");
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             return [];
@@ -154,7 +154,7 @@ class BookRepository {
 
     public function getBookById(int $id): ?array {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM books WHERE id = :id");
+            $stmt = $this->db->prepare("SELECT b.*, c.name AS category FROM books b LEFT JOIN categories c ON b.category_id = c.id WHERE b.id = :id");
             $stmt->execute(['id' => $id]);
             return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
         } catch (PDOException $e) {
@@ -164,11 +164,25 @@ class BookRepository {
 
     public function add(string $title, string $author, string $category, float $price, ?string $image, string $description, int $featured = 0, int $quantity = 10): bool {
         try {
-            $stmt = $this->db->prepare("INSERT INTO books (title, author, category, price, image, description, featured, quantity) VALUES (:title, :author, :category, :price, :image, :description, :featured, :quantity)");
+            // Backward compatibility: check if $category is category_id (numeric) or name (string)
+            if (is_numeric($category)) {
+                $categoryId = (int)$category;
+            } else {
+                $stmt = $this->db->prepare("SELECT id FROM categories WHERE name = :name");
+                $stmt->execute(['name' => $category]);
+                $categoryId = $stmt->fetchColumn();
+                if (!$categoryId) {
+                    $stmt_insert = $this->db->prepare("INSERT INTO categories (name) VALUES (:name)");
+                    $stmt_insert->execute(['name' => $category]);
+                    $categoryId = $this->db->lastInsertId();
+                }
+            }
+
+            $stmt = $this->db->prepare("INSERT INTO books (title, author, category_id, price, image, description, featured, quantity) VALUES (:title, :author, :category_id, :price, :image, :description, :featured, :quantity)");
             return $stmt->execute([
                 'title' => $title,
                 'author' => $author,
-                'category' => $category,
+                'category_id' => $categoryId,
                 'price' => $price,
                 'image' => $image ?: 'dac_nhan_tam.jpg',
                 'description' => $description,
@@ -182,11 +196,25 @@ class BookRepository {
 
     public function update(int $id, string $title, string $author, string $category, float $price, ?string $image, string $description, int $featured = 0, int $quantity = 10): bool {
         try {
-            $sql = "UPDATE books SET title = :title, author = :author, category = :category, price = :price, description = :description, featured = :featured, quantity = :quantity";
+            // Backward compatibility: check if $category is category_id (numeric) or name (string)
+            if (is_numeric($category)) {
+                $categoryId = (int)$category;
+            } else {
+                $stmt = $this->db->prepare("SELECT id FROM categories WHERE name = :name");
+                $stmt->execute(['name' => $category]);
+                $categoryId = $stmt->fetchColumn();
+                if (!$categoryId) {
+                    $stmt_insert = $this->db->prepare("INSERT INTO categories (name) VALUES (:name)");
+                    $stmt_insert->execute(['name' => $category]);
+                    $categoryId = $this->db->lastInsertId();
+                }
+            }
+
+            $sql = "UPDATE books SET title = :title, author = :author, category_id = :category_id, price = :price, description = :description, featured = :featured, quantity = :quantity";
             $params = [
                 'title' => $title,
                 'author' => $author,
-                'category' => $category,
+                'category_id' => $categoryId,
                 'price' => $price,
                 'description' => $description,
                 'featured' => $featured,
@@ -211,6 +239,81 @@ class BookRepository {
             return $stmt->execute(['id' => $id]);
         } catch (PDOException $e) {
             return false;
+        }
+    }
+}
+
+/**
+ * Class CategoryRepository
+ * Quản lý các thao tác liên quan đến Thể loại sách
+ */
+class CategoryRepository {
+    private PDO $db;
+
+    public function __construct(DatabaseConnectionInterface $connectionManager) {
+        $this->db = $connectionManager->getConnection();
+    }
+
+    public function getAllCategories(): array {
+        try {
+            $stmt = $this->db->query("SELECT * FROM categories ORDER BY name ASC");
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    public function getCategoryById(int $id): ?array {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM categories WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+            return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (PDOException $e) {
+            return null;
+        }
+    }
+
+    public function add(string $name, ?string $description = null): bool {
+        try {
+            $stmt = $this->db->prepare("INSERT INTO categories (name, description) VALUES (:name, :description)");
+            return $stmt->execute([
+                'name' => $name,
+                'description' => $description
+            ]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    public function update(int $id, string $name, ?string $description = null): bool {
+        try {
+            $stmt = $this->db->prepare("UPDATE categories SET name = :name, description = :description WHERE id = :id");
+            return $stmt->execute([
+                'name' => $name,
+                'description' => $description,
+                'id' => $id
+            ]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    public function delete(int $id): bool {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM categories WHERE id = :id");
+            return $stmt->execute(['id' => $id]);
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    public function isCategoryUsed(int $id): bool {
+        try {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM books WHERE category_id = :id");
+            $stmt->execute(['id' => $id]);
+            return (int)$stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            return true; // Safe fallback: assume it is used if query fails
         }
     }
 }
@@ -666,9 +769,40 @@ class PayOSService {
 // Các hàm bao này giữ nguyên giao tiếp cũ để không phá vỡ code ở các trang khác
 // =========================================================================
 $bookRepo = new BookRepository($dbConnectionManager);
+$categoryRepo = new CategoryRepository($dbConnectionManager);
 $userRepo = new UserRepository($dbConnectionManager);
 $orderRepo = new OrderRepository($dbConnectionManager);
 $cartManager = new CartManager($dbConnectionManager);
+
+function get_categories() {
+    global $categoryRepo;
+    return $categoryRepo->getAllCategories();
+}
+
+function get_category_by_id($id) {
+    global $categoryRepo;
+    return $categoryRepo->getCategoryById((int)$id);
+}
+
+function add_category($name, $description = null) {
+    global $categoryRepo;
+    return $categoryRepo->add($name, $description);
+}
+
+function update_category($id, $name, $description = null) {
+    global $categoryRepo;
+    return $categoryRepo->update((int)$id, $name, $description);
+}
+
+function delete_category($id) {
+    global $categoryRepo;
+    return $categoryRepo->delete((int)$id);
+}
+
+function is_category_used($id) {
+    global $categoryRepo;
+    return $categoryRepo->isCategoryUsed((int)$id);
+}
 
 function get_books() {
     global $bookRepo;

@@ -19,17 +19,25 @@ CREATE TABLE users (
     role ENUM('user', 'admin') DEFAULT 'user'
 );
 
+-- Bảng categories (Thể loại sách)
+CREATE TABLE categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    description TEXT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Bảng books (Sách)
 CREATE TABLE books (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     author VARCHAR(150) NOT NULL,
-    category VARCHAR(100) NOT NULL,
+    category_id INT NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
     image VARCHAR(255),
     description TEXT,
     featured TINYINT(1) DEFAULT 0,
-    quantity INT DEFAULT 10
+    quantity INT DEFAULT 10,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
 );
 
 -- Bảng orders (Đơn hàng tổng)
@@ -79,16 +87,26 @@ INSERT INTO users (username, fullname, email, password, role) VALUES
 ('tranthib', 'Trần Thị B', 'tranthib@gmail.com', 'e10adc3949ba59abbe56e057f20f883e', 'user'),
 ('lehoangc', 'Lê Hoàng C', 'lehoangc@gmail.com', 'e10adc3949ba59abbe56e057f20f883e', 'user');
 
+-- Thêm Categories
+INSERT INTO categories (id, name, description) VALUES
+(1, 'Tâm lý - Kỹ năng sống', 'Sách hướng dẫn về kỹ năng sống, giao tiếp, và phát triển bản thân.'),
+(2, 'Tiểu thuyết', 'Các tác phẩm văn học hư cấu mang tính chất tiểu thuyết.'),
+(3, 'Công nghệ thông tin', 'Sách về lập trình, thiết kế web, hệ quản trị cơ sở dữ liệu và công nghệ.'),
+(4, 'Văn học Việt Nam', 'Các tác phẩm văn học nổi tiếng của các tác giả Việt Nam.'),
+(5, 'Khoa học vũ trụ', 'Sách nghiên cứu và phổ biến kiến thức về thiên văn và vũ trụ.'),
+(6, 'Tài chính cá nhân', 'Sách hướng dẫn quản lý tài chính, đầu tư và tư duy làm giàu.'),
+(7, 'Tâm lý học', 'Các cuốn sách nghiên cứu về tâm lý, hành vi con người.');
+
 -- Thêm Books
-INSERT INTO books (title, author, category, price, image, description, featured, quantity) VALUES
-('Đắc Nhân Tâm', 'Dale Carnegie', 'Tâm lý - Kỹ năng sống', 85000.00, 'dac_nhan_tam.jpg', 'Cuốn sách nghệ thuật thu phục lòng người.', 1, 15),
-('Nhà Giả Kim', 'Paulo Coelho', 'Tiểu thuyết', 79000.00, 'nha_gia_kim.jpg', 'Hành trình đi tìm vận mệnh của cậu bé chăn cừu.', 1, 20),
-('Clean Code', 'Robert C. Martin', 'Công nghệ thông tin', 250000.00, 'clean_code.jpg', 'Sách hướng dẫn viết mã sạch cho lập trình viên.', 1, 5),
-('Lập Trình PHP Căn Bản', 'ThS. Nguyễn Trung Trí', 'Công nghệ thông tin', 150000.00, 'php_can_ban.jpg', 'Tài liệu hướng dẫn thiết kế website với PHP & MySQL dành cho sinh viên.', 0, 12),
-('Tuổi Trẻ Đáng Giá Bao Nhiêu', 'Rosie Nguyễn', 'Tâm lý - Kỹ năng sống', 80000.00, 'tuoi_tre.jpg', 'Sách truyền cảm hứng cho giới trẻ về việc học tập, làm việc và trải nghiệm.', 0, 8),
-('Tôi Thấy Hoa Vàng Trên Cỏ Xanh', 'Nguyễn Nhật Ánh', 'Tiểu thuyết', 95000.00, 'hoa_vang_co_xanh.jpg', 'Câu chuyện tuổi thơ đầy xúc động và ý nghĩa tại một làng quê nghèo.', 0, 10),
-('Thiết Kế Web Với HTML, CSS & JS', 'Jon Duckett', 'Công nghệ thông tin', 220000.00, 'html_css_js.jpg', 'Cuốn sách trực quan và dễ hiểu nhất để học thiết kế giao diện website.', 0, 6),
-('Tư Duy Nhanh Và Chậm', 'Daniel Kahneman', 'Tâm lý học', 185000.00, 'tu_duy_nhanh_cham.jpg', 'Khám phá hai hệ thống tư duy chi phối mọi quyết định của con người.', 0, 14);
+INSERT INTO books (title, author, category_id, price, image, description, featured, quantity) VALUES
+('Đắc Nhân Tâm', 'Dale Carnegie', 1, 85000.00, 'dac_nhan_tam.jpg', 'Cuốn sách nghệ thuật thu phục lòng người.', 1, 15),
+('Nhà Giả Kim', 'Paulo Coelho', 2, 79000.00, 'nha_gia_kim.jpg', 'Hành trình đi tìm vận mệnh của cậu bé chăn cừu.', 1, 20),
+('Clean Code', 'Robert C. Martin', 3, 250000.00, 'clean_code.jpg', 'Sách hướng dẫn viết mã sạch cho lập trình viên.', 1, 5),
+('Lập Trình PHP Căn Bản', 'ThS. Nguyễn Trung Trí', 3, 150000.00, 'php_can_ban.jpg', 'Tài liệu hướng dẫn thiết kế website với PHP & MySQL dành cho sinh viên.', 0, 12),
+('Tuổi Trẻ Đáng Giá Bao Nhiêu', 'Rosie Nguyễn', 1, 80000.00, 'tuoi_tre.jpg', 'Sách truyền cảm hứng cho giới trẻ về việc học tập, làm việc và trải nghiệm.', 0, 8),
+('Tôi Thấy Hoa Vàng Trên Cỏ Xanh', 'Nguyễn Nhật Ánh', 2, 95000.00, 'hoa_vang_co_xanh.jpg', 'Câu chuyện tuổi thơ đầy xúc động và ý nghĩa tại một làng quê nghèo.', 0, 10),
+('Thiết Kế Web Với HTML, CSS & JS', 'Jon Duckett', 3, 220000.00, 'html_css_js.jpg', 'Cuốn sách trực quan và dễ hiểu nhất để học thiết kế giao diện website.', 0, 6),
+('Tư Duy Nhanh Và Chậm', 'Daniel Kahneman', 7, 185000.00, 'tu_duy_nhanh_cham.jpg', 'Khám phá hai hệ thống tư duy chi phối mọi quyết định của con người.', 0, 14);
 
 -- Thêm Giỏ hàng mẫu cho Nguyễn Văn A (user_id = 2) đang chọn mua 2 sách
 INSERT INTO cart (user_id, book_id, quantity) VALUES

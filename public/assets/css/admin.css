@@ -242,3 +242,185 @@
     gap: 0.5rem;
   }
 }
+
+/* =========================================================================
+   SIDEBAR & DASHBOARD OVERVIEW STYLING
+   ========================================================================= */
+.sidebar-dashboard {
+  position: sticky;
+  top: 95px;
+  margin-bottom: 2rem;
+  border-radius: 18px;
+}
+
+.admin-avatar-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--surface-subtle);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.nav-link-dashboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.85rem 1.25rem !important;
+  color: var(--text-muted) !important;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border-radius: 10px !important;
+  transition: var(--transition-smooth);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.nav-link-dashboard:hover {
+  color: var(--text-main) !important;
+  background: var(--surface-subtle);
+  border-color: var(--glass-border);
+  transform: translateX(4px);
+}
+
+.nav-link-dashboard.active {
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)) !important;
+  color: var(--button-text) !important;
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 14px var(--page-glow-primary);
+}
+
+.nav-link-dashboard.back-link {
+  color: var(--accent-color) !important;
+}
+
+.nav-link-dashboard.back-link:hover {
+  background: rgba(196, 90, 45, 0.08);
+  border-color: rgba(196, 90, 45, 0.2);
+}
+
+/* Dashboard Stat Cards */
+.stat-card-custom {
+  padding: 1.5rem;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  height: 100%;
+  transition: var(--transition-smooth);
+}
+
+.stat-card-custom:hover {
+  transform: translateY(-4px);
+}
+
+.stat-icon-box {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.stat-info h3 {
+  font-family: var(--font-body);
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.stat-info span {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Color Themes for Stat Cards */
+.card-revenue {
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+.card-revenue .stat-icon-box {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.card-orders {
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+}
+.card-orders .stat-icon-box {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+}
+
+.card-stock {
+  background: rgba(244, 211, 94, 0.06);
+  border: 1px solid rgba(244, 211, 94, 0.15);
+}
+.card-stock .stat-icon-box {
+  background: rgba(244, 211, 94, 0.12);
+  color: #e0c568;
+}
+
+.card-titles {
+  background: rgba(196, 90, 45, 0.06);
+  border: 1px solid rgba(196, 90, 45, 0.15);
+}
+.card-titles .stat-icon-box {
+  background: rgba(196, 90, 45, 0.12);
+  color: #e07a3f;
+}
+
+/* Recent items */
+.recent-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.recent-list-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.recent-list-item:first-child {
+  padding-top: 0;
+}
+
+/* Category Progress Bars */
+.cat-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.progress-custom {
+  background: var(--surface-subtle);
+  border-radius: 10px;
+  height: 8px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.progress-bar-custom {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.6s ease;
+}
+
+.progress-revenue { background: #10b981; }
+.progress-orders { background: #38bdf8; }
+.progress-stock { background: #e0c568; }
+.progress-titles { background: #e07a3f; }
+

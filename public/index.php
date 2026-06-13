@@ -87,6 +87,17 @@ foreach ($books as $book) {
     }
 }
 
+// Phân trang cho danh sách sách chính (Tất cả sách / Kết quả tìm kiếm)
+$books_per_page = 8;
+$current_book_page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$total_books = count($filtered_books);
+$total_pages = max(1, ceil($total_books / $books_per_page));
+if ($current_book_page > $total_pages) {
+    $current_book_page = $total_pages;
+}
+$offset = ($current_book_page - 1) * $books_per_page;
+$paginated_books = array_slice($filtered_books, $offset, $books_per_page);
+
 // Lọc sách nổi bật (Featured Books) để hiển thị banner riêng
 $featured_books = [];
 foreach ($books as $book) {
@@ -94,6 +105,7 @@ foreach ($books as $book) {
         $featured_books[] = $book;
     }
 }
+
 
 // Định nghĩa icon cho các thể loại sách
 function get_category_icon($category_name) {
@@ -292,64 +304,86 @@ require_once __DIR__ . '/../includes/header.php';
         </script>
     <?php endif; ?>
 
-    <!-- PHẦN 1: SÁCH NỔI BẬT (Chỉ hiển thị ở trang chủ mặc định) -->
+    <!-- PHẦN 1: SÁCH NỔI BẬT (Chỉ hiển thị ở trang chủ mặc định dưới dạng Carousel) -->
     <?php if ($search_query === '' && $category_filter === '' && !empty($featured_books)): ?>
+        <?php 
+        // Chia danh sách sách nổi bật thành các slide, mỗi slide chứa tối đa 4 cuốn
+        $featured_chunks = array_chunk($featured_books, 4);
+        ?>
         <div class="mb-5" id="featured-section">
             <h2 class="section-title">Sách Nổi Bật</h2>
-            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
-                <?php foreach ($featured_books as $book): 
-                    $original_price = $book['price'] / 0.8; // Giả lập giảm 20%
-                ?>
-                    <div class="col book-item-column featured-item" data-title="<?php echo htmlspecialchars($book['title']); ?>" data-author="<?php echo htmlspecialchars($book['author']); ?>">
-                        <div class="glass-panel glass-panel-hover book-card">
-                            <div class="discount-badge">-20%</div>
-                            <div class="book-featured-tag">Nổi bật</div>
-                            <a href="book-detail.php?id=<?php echo $book['id']; ?>">
-                                <div class="book-img-wrapper">
-                                    <img src="<?php echo htmlspecialchars(!empty($book['image']) ? ((strpos($book['image'], 'http') === 0 || strpos($book['image'], 'uploads/books/') === 0) ? $book['image'] : 'uploads/' . $book['image']) : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500'); ?>" class="book-img" alt="<?php echo htmlspecialchars($book['title']); ?>">
-                                </div>
-                            </a>
-                            <div class="book-card-body">
-                                <span class="book-category"><?php echo htmlspecialchars($book['category']); ?></span>
-                                <h4 class="book-title">
-                                    <a href="book-detail.php?id=<?php echo $book['id']; ?>"><?php echo htmlspecialchars($book['title']); ?></a>
-                                </h4>
-                                <p class="book-author">Tác giả: <?php echo htmlspecialchars($book['author']); ?></p>
-                                
-                                <!-- Rating giả lập động -->
-                                <div class="rating-stars">
-                                    <?php 
-                                    $rating = ($book['id'] % 2 === 0) ? 4.5 : 5.0;
-                                    $full_stars = floor($rating);
-                                    $half_star = ($rating - $full_stars) >= 0.5;
-                                    for ($i = 1; $i <= 5; $i++) {
-                                        if ($i <= $full_stars) {
-                                            echo '<i class="fas fa-star"></i>';
-                                        } elseif ($i === $full_stars + 1 && $half_star) {
-                                            echo '<i class="fas fa-star-half-alt"></i>';
-                                        } else {
-                                            echo '<i class="far fa-star"></i>';
-                                        }
-                                    }
-                                    ?>
-                                    <span class="rating-count">(<?php echo ($book['id'] * 12 + 7) % 50 + 10; ?>)</span>
-                                </div>
+            <div id="featuredCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="8000">
+                <div class="carousel-inner">
+                    <?php foreach ($featured_chunks as $index => $chunk): ?>
+                        <div class="carousel-item <?php echo ($index === 0) ? 'active' : ''; ?>">
+                            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 py-2">
+                                <?php foreach ($chunk as $book): ?>
+                                    <div class="col book-item-column featured-item" data-title="<?php echo htmlspecialchars($book['title']); ?>" data-author="<?php echo htmlspecialchars($book['author']); ?>">
+                                        <div class="glass-panel glass-panel-hover book-card">
+                                            <div class="discount-badge">-20%</div>
+                                            <div class="book-featured-tag">Nổi bật</div>
+                                            <a href="book-detail.php?id=<?php echo $book['id']; ?>">
+                                                <div class="book-img-wrapper">
+                                                    <img src="<?php echo htmlspecialchars(!empty($book['image']) ? ((strpos($book['image'], 'http') === 0 || strpos($book['image'], 'uploads/books/') === 0) ? $book['image'] : 'uploads/' . $book['image']) : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500'); ?>" class="book-img" alt="<?php echo htmlspecialchars($book['title']); ?>">
+                                                </div>
+                                            </a>
+                                            <div class="book-card-body">
+                                                <span class="book-category"><?php echo htmlspecialchars($book['category']); ?></span>
+                                                <h4 class="book-title">
+                                                    <a href="book-detail.php?id=<?php echo $book['id']; ?>"><?php echo htmlspecialchars($book['title']); ?></a>
+                                                </h4>
+                                                <p class="book-author">Tác giả: <?php echo htmlspecialchars($book['author']); ?></p>
+                                                
+                                                <!-- Rating giả lập động -->
+                                                <div class="rating-stars">
+                                                    <?php 
+                                                    $rating = ($book['id'] % 2 === 0) ? 4.5 : 5.0;
+                                                    $full_stars = floor($rating);
+                                                    $half_star = ($rating - $full_stars) >= 0.5;
+                                                    for ($i = 1; $i <= 5; $i++) {
+                                                        if ($i <= $full_stars) {
+                                                            echo '<i class="fas fa-star"></i>';
+                                                        } elseif ($i === $full_stars + 1 && $half_star) {
+                                                            echo '<i class="fas fa-star-half-alt"></i>';
+                                                        } else {
+                                                            echo '<i class="far fa-star"></i>';
+                                                        }
+                                                    }
+                                                    ?>
+                                                    <span class="rating-count">(<?php echo ($book['id'] * 12 + 7) % 50 + 10; ?>)</span>
+                                                </div>
 
-                                <div class="book-price-row align-items-center">
-                                    <div>
-                                        <span class="book-price text-warning"><?php echo number_format($book['price'], 0, ',', '.'); ?> đ</span>
+                                                <div class="book-price-row align-items-center">
+                                                    <div>
+                                                        <span class="book-price text-warning"><?php echo number_format($book['price'], 0, ',', '.'); ?> đ</span>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex gap-2 align-items-center mt-2 w-100">
+                                                    <a href="index.php?buy_now=<?php echo $book['id']; ?>" class="btn btn-sm btn-warning text-dark font-weight-600 flex-grow-1 text-center d-flex align-items-center justify-content-center" style="border-radius: 20px; font-size: 0.75rem; transition: var(--transition-smooth); white-space: nowrap; height: 40px;" title="Mua ngay">Mua ngay</a>
+                                                    <a href="javascript:void(0);" class="btn-add-cart btn-add-to-cart-ajax" data-book-id="<?php echo $book['id']; ?>" title="Thêm vào giỏ hàng">
+                                                        <i class="fas fa-plus"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="d-flex gap-2 align-items-center mt-2 w-100">
-                                    <a href="index.php?buy_now=<?php echo $book['id']; ?>" class="btn btn-sm btn-warning text-dark font-weight-600 flex-grow-1 text-center d-flex align-items-center justify-content-center" style="border-radius: 20px; font-size: 0.75rem; transition: var(--transition-smooth); white-space: nowrap; height: 40px;" title="Mua ngay">Mua ngay</a>
-                                    <a href="javascript:void(0);" class="btn-add-cart btn-add-to-cart-ajax" data-book-id="<?php echo $book['id']; ?>" title="Thêm vào giỏ hàng">
-                                        <i class="fas fa-plus"></i>
-                                    </a>
-                                </div>
+                                <?php endforeach; ?>
                             </div>
                         </div>
-                    </div>
-                <?php endforeach; ?>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- Nút điều khiển Carousel -->
+                <?php if (count($featured_chunks) > 1): ?>
+                    <button class="carousel-control-prev" type="button" data-bs-target="#featuredCarousel" data-bs-slide="prev">
+                        <i class="fas fa-chevron-left text-theme" style="font-size: 1.15rem;"></i>
+                        <span class="visually-hidden">Trước</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#featuredCarousel" data-bs-slide="next">
+                        <i class="fas fa-chevron-right text-theme" style="font-size: 1.15rem;"></i>
+                        <span class="visually-hidden">Sau</span>
+                    </button>
+                <?php endif; ?>
             </div>
         </div>
     <?php endif; ?>
@@ -376,8 +410,8 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <div id="all-books-grid" class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4 <?php echo empty($filtered_books) ? 'd-none' : ''; ?>">
-            <?php if (!empty($filtered_books)): ?>
-                <?php foreach ($filtered_books as $book): ?>
+            <?php if (!empty($paginated_books)): ?>
+                <?php foreach ($paginated_books as $book): ?>
                     <?php $original_price = $book['price'] / 0.8; ?>
                     <div class="col book-item-column" data-title="<?php echo htmlspecialchars($book['title']); ?>" data-author="<?php echo htmlspecialchars($book['author']); ?>">
                         <div class="glass-panel glass-panel-hover book-card">
@@ -429,6 +463,63 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
+
+        <!-- Phân trang -->
+        <?php if ($total_pages > 1): ?>
+            <div class="pagination-container">
+                <!-- Nút Trước (Prev) -->
+                <?php 
+                $prev_params = $_GET;
+                $prev_params['page'] = $current_book_page - 1;
+                $prev_url = 'index.php?' . http_build_query($prev_params);
+                ?>
+                <a href="<?php echo ($current_book_page > 1) ? htmlspecialchars($prev_url) : 'javascript:void(0);'; ?>" 
+                   class="pagination-item prev-next <?php echo ($current_book_page <= 1) ? 'disabled' : ''; ?>">
+                    <i class="fas fa-chevron-left me-1"></i> Trước
+                </a>
+
+                <!-- Các số trang -->
+                <?php 
+                $range = 2;
+                $initial_num = $current_book_page - $range;
+                $condition_limit_num = ($current_book_page + $range) + 1;
+
+                for ($i = 1; $i <= $total_pages; $i++): 
+                    if ($i == 1 || $i == $total_pages || ($i >= $initial_num && $i < $condition_limit_num)): 
+                        if ($i == $initial_num && $i > 2): 
+                            echo '<span class="pagination-item disabled">...</span>';
+                        endif;
+
+                        $page_params = $_GET;
+                        $page_params['page'] = $i;
+                        $page_url = 'index.php?' . http_build_query($page_params);
+                        ?>
+                        <a href="<?php echo htmlspecialchars($page_url); ?>" 
+                           class="pagination-item <?php echo ($i === $current_book_page) ? 'active' : ''; ?>">
+                            <?php echo $i; ?>
+                        </a>
+                        <?php 
+                        if ($i == ($current_book_page + $range) && $i < $total_pages - 1): 
+                            echo '<span class="pagination-item disabled">...</span>';
+                        endif;
+                    endif;
+                endfor; 
+                ?>
+
+                <!-- Nút Sau (Next) -->
+                <?php 
+                $next_params = $_GET;
+                $next_params['page'] = $current_book_page + 1;
+                $next_url = 'index.php?' . http_build_query($next_params);
+                ?>
+                <a href="<?php echo ($current_book_page < $total_pages) ? htmlspecialchars($next_url) : 'javascript:void(0);'; ?>" 
+                   class="pagination-item prev-next <?php echo ($current_book_page >= $total_pages) ? 'disabled' : ''; ?>">
+                    Sau <i class="fas fa-chevron-right ms-1"></i>
+                </a>
+            </div>
+        <?php endif; ?>
+
+
     </div>
 </div>
 </div> <!-- Đóng container danh sách sách -->

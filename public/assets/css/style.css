@@ -278,7 +278,7 @@ td.text-white {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--glass-border);
-  padding: 0.8rem 0;
+  padding: 1rem 0;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -287,8 +287,8 @@ td.text-white {
 
 .navbar-brand {
   font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 1.9rem;
+  font-weight: 800;
+  font-size: 2.1rem;
   color: var(--text-main) !important;
   display: flex;
   align-items: center;
@@ -296,50 +296,59 @@ td.text-white {
   text-decoration: none;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   transition: var(--transition-smooth);
+  background: linear-gradient(135deg, var(--text-main) 40%, var(--accent-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .navbar-brand i {
-  color: var(--accent-color);
+  background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .navbar-brand:hover i {
-  transform: rotate(-10deg) scale(1.1);
+  transform: rotate(-12deg) scale(1.15);
 }
 
 .navbar-brand span {
-  color: var(--accent-color);
+  background: linear-gradient(135deg, var(--accent-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .nav-link {
   color: var(--text-muted) !important;
   font-weight: 600;
+  font-size: 0.95rem;
   transition: var(--transition-smooth);
-  padding: 0.5rem 1rem !important;
+  padding: 0.6rem 1.1rem !important;
   border-radius: 8px;
   position: relative;
 }
 
 .nav-link::after {
-  content: '';
+  content: "";
   position: absolute;
-  bottom: 0;
+  bottom: 4px;
   left: 50%;
   width: 0;
-  height: 2px;
-  background: var(--accent-color);
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
+  border-radius: 2px;
   transition: var(--transition-smooth);
   transform: translateX(-50%);
 }
 
 .nav-link:hover::after,
 .nav-link.active::after {
-  width: 70%;
+  width: 55%;
 }
 
 .nav-link:hover {
   color: var(--text-main) !important;
-  background: rgba(255, 255, 255, 0.05) !important;
+  background: var(--surface-subtle) !important;
 }
 
 /* =========================
@@ -347,7 +356,7 @@ td.text-white {
 ========================= */
 .navbar .btn-cart {
   position: relative;
-  padding: 0.55rem 1.4rem;
+  padding: 0.6rem 1.5rem;
   border-radius: 50px;
   font-weight: 600;
   transition: var(--transition-smooth);
@@ -362,14 +371,17 @@ td.text-white {
 
 .navbar .btn-cart:hover {
   transform: scale(1.05) translateY(-1px);
-  box-shadow: 0 8px 24px var(--page-glow-primary), 0 0 10px var(--primary-color);
+  box-shadow:
+    0 8px 24px var(--page-glow-primary),
+    0 0 10px var(--primary-color);
+  color: var(--button-text);
 }
 
 /* =========================
    Login button in Navbar
 ========================= */
 .btn-login {
-  padding: 0.55rem 1.4rem;
+  padding: 0.6rem 1.5rem;
   border-radius: 50px;
   font-weight: 600;
   transition: var(--transition-smooth);
@@ -406,6 +418,116 @@ td.text-white {
   justify-content: center;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(244, 211, 94, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(244, 211, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(244, 211, 94, 0);
+  }
+}
+
+/* =========================================================================
+   THEME TOGGLE BUTTON STYLING
+   ========================================================================= */
+.btn-theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface-subtle);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+  padding: 0;
+}
+
+.btn-theme-toggle:hover {
+  background: var(--surface-strong);
+  border-color: var(--accent-color);
+  transform: scale(1.05) rotate(15deg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.btn-theme-toggle .icon-sun,
+.btn-theme-toggle .icon-moon {
+  position: absolute;
+  font-size: 1.15rem;
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root[data-theme="light"] .btn-theme-toggle .icon-sun {
+  transform: translateY(30px);
+  opacity: 0;
+}
+
+:root[data-theme="light"] .btn-theme-toggle .icon-moon {
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
+  color: #4b5563;
+}
+
+:root[data-theme="dark"] .btn-theme-toggle .icon-sun {
+  transform: translateY(0) rotate(0deg);
+  opacity: 1;
+  color: #fbbf24;
+}
+
+:root[data-theme="dark"] .btn-theme-toggle .icon-moon {
+  transform: translateY(-30px);
+  opacity: 0;
+}
+
+/* Custom Dropdown Animation on Hover */
+.dropdown-menu-custom {
+  background: var(--surface-strong) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--card-shadow) !important;
+  padding: 0.5rem !important;
+  transform: translateY(10px);
+  opacity: 0;
+  visibility: hidden;
+  display: block !important;
+  transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1) !important;
+}
+
+.dropdown:hover .dropdown-menu-custom {
+  transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.dropdown-menu-custom .dropdown-item {
+  color: var(--text-main) !important;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: var(--transition-smooth);
+}
+
+.dropdown-menu-custom .dropdown-item:hover,
+.dropdown-menu-custom .dropdown-item.active {
+  background: var(--surface-subtle) !important;
+  color: var(--accent-color) !important;
+  transform: translateX(3px);
+}
+
+.dropdown-menu-custom .dropdown-divider {
+  border-color: var(--glass-border) !important;
 }
 
 /* =========================
@@ -433,7 +555,9 @@ td.text-white {
 
 .btn-primary-custom:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--page-glow-primary), 0 0 15px var(--primary-color);
+  box-shadow:
+    0 8px 24px var(--page-glow-primary),
+    0 0 15px var(--primary-color);
   color: var(--button-text);
 }
 
@@ -521,13 +645,18 @@ footer {
 
 /* Glow line in the center of the border */
 footer::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 10%;
   width: 80%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-color),
+    transparent
+  );
   opacity: 0.6;
 }
 
@@ -622,7 +751,7 @@ footer::before {
 }
 
 .footer-section-title::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -6px;
   left: 0;
@@ -863,7 +992,6 @@ footer::before {
   outline: none;
 }
 
-
 /* =========================
    Tables
 ========================= */
@@ -1063,3 +1191,171 @@ footer::before {
     opacity: 0;
   }
 }
+
+/* =========================================================================
+   PAGINATION CUSTOM (Glassmorphic)
+   ========================================================================= */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 3.5rem;
+  margin-bottom: 2rem;
+}
+
+.pagination-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: var(--transition-smooth);
+  background: var(--surface-subtle);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pagination-item:hover {
+  background: var(--surface-strong);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.pagination-item.active {
+  background: linear-gradient(
+    135deg,
+    var(--primary-color),
+    var(--primary-hover)
+  );
+  color: var(--button-text) !important;
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px var(--page-glow-primary);
+}
+
+.pagination-item.disabled {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.pagination-item.prev-next {
+  border-radius: 20px;
+  padding: 0 1.2rem;
+}
+
+/* =========================================================================
+   FEATURED CAROUSEL CONTROLS
+   ========================================================================= */
+#featured-section {
+  position: relative;
+}
+
+#featuredCarousel {
+  padding: 0 45px;
+}
+
+#featuredCarousel .carousel-control-prev,
+#featuredCarousel .carousel-control-next {
+  width: 42px;
+  height: 42px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.85;
+  transition: var(--transition-smooth);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#featuredCarousel .carousel-control-prev:hover,
+#featuredCarousel .carousel-control-next:hover {
+  background: var(--surface-strong);
+  border-color: var(--accent-color);
+  opacity: 1;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#featuredCarousel .carousel-control-prev {
+  left: -15px;
+}
+
+#featuredCarousel .carousel-control-next {
+  right: -15px;
+}
+
+@media (max-width: 768px) {
+  #featuredCarousel {
+    padding: 0;
+  }
+  #featuredCarousel .carousel-control-prev,
+  #featuredCarousel .carousel-control-next {
+    display: none;
+  }
+}
+
+#featuredCarousel .carousel-item {
+  transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* =========================================================================
+   Order & Panel Theme-Aware Color Corrections (Light/Dark Mode Fix)
+   ========================================================================= */
+.glass-panel,
+.order-box,
+.order-card {
+  color: var(--text-main) !important;
+}
+
+.glass-panel .text-white:not(.btn):not(.badge):not(.alert),
+.order-box .text-white:not(.btn):not(.badge):not(.alert),
+.order-card .text-white:not(.btn):not(.badge):not(.alert) {
+  color: var(--text-main) !important;
+}
+
+.glass-panel .text-muted:not(.btn):not(.badge),
+.order-box .text-muted:not(.btn):not(.badge),
+.order-card .text-muted:not(.btn):not(.badge),
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+.glass-panel table,
+.order-box table,
+.order-card table {
+  color: var(--text-main) !important;
+}
+
+.glass-panel table td,
+.glass-panel table th,
+.order-box table td,
+.order-box table th,
+.order-card table td,
+.order-card table th {
+  color: var(--text-main) !important;
+}
+
+.glass-panel table td.text-muted,
+.glass-panel table th.text-muted,
+.order-box table td.text-muted,
+.order-box table th.text-muted,
+.order-card table td.text-muted,
+.order-card table th.text-muted {
+  color: var(--text-muted) !important;
+}
+
+
+
