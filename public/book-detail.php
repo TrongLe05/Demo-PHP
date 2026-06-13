@@ -213,9 +213,9 @@ require_once __DIR__ . '/../includes/header.php';
                                     <img src="<?php echo htmlspecialchars(!empty($r_book['image']) ? ((strpos($r_book['image'], 'http') === 0 || strpos($r_book['image'], 'uploads/') === 0) ? $r_book['image'] : 'uploads/' . $r_book['image']) : 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=500'); ?>" class="book-img" alt="<?php echo htmlspecialchars($r_book['title']); ?>">
                                 </div>
                             </a>
-                            <div class="book-card-body">
+                            <div class="book-card-body" style="padding: 1.2rem;">
                                 <span class="book-category" style="font-size: 0.75rem;"><?php echo htmlspecialchars($r_book['category']); ?></span>
-                                <h5 class="book-title" style="font-size: 1.1rem; height: 3rem;">
+                                <h5 class="book-title" style="font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.4rem;">
                                     <a href="book-detail.php?id=<?php echo $r_book['id']; ?>"><?php echo htmlspecialchars($r_book['title']); ?></a>
                                 </h5>
                                 <p class="book-author mb-2" style="font-size: 0.8rem;">Tác giả: <?php echo htmlspecialchars($r_book['author']); ?></p>

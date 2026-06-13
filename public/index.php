@@ -345,12 +345,12 @@ require_once __DIR__ . '/../includes/header.php';
                                     <div>
                                         <span class="book-price text-warning"><?php echo number_format($book['price'], 0, ',', '.'); ?> đ</span>
                                     </div>
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <a href="index.php?buy_now=<?php echo $book['id']; ?>" class="btn btn-sm btn-warning py-1 px-3 text-dark font-weight-600" style="border-radius: 20px; font-size: 0.75rem; transition: var(--transition-smooth); white-space: nowrap;" title="Mua ngay">Mua ngay</a>
-                                        <a href="javascript:void(0);" class="btn-add-cart btn-add-to-cart-ajax" data-book-id="<?php echo $book['id']; ?>" title="Thêm vào giỏ hàng">
-                                            <i class="fas fa-plus"></i>
-                                        </a>
-                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 align-items-center mt-2 w-100">
+                                    <a href="index.php?buy_now=<?php echo $book['id']; ?>" class="btn btn-sm btn-warning text-dark font-weight-600 flex-grow-1 text-center d-flex align-items-center justify-content-center" style="border-radius: 20px; font-size: 0.75rem; transition: var(--transition-smooth); white-space: nowrap; height: 40px;" title="Mua ngay">Mua ngay</a>
+                                    <a href="javascript:void(0);" class="btn-add-cart btn-add-to-cart-ajax" data-book-id="<?php echo $book['id']; ?>" title="Thêm vào giỏ hàng">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -422,12 +422,12 @@ require_once __DIR__ . '/../includes/header.php';
                                     <div>
                                         <span class="book-price text-warning"><?php echo number_format($book['price'], 0, ',', '.'); ?> đ</span>
                                     </div>
-                                    <div class="d-flex gap-2 align-items-center">
-                                        <a href="index.php?buy_now=<?php echo $book['id']; ?>" class="btn btn-sm btn-warning py-1 px-3 text-dark font-weight-600" style="border-radius: 20px; font-size: 0.75rem; transition: var(--transition-smooth); white-space: nowrap;" title="Mua ngay">Mua ngay</a>
-                                        <a href="javascript:void(0);" class="btn-add-cart btn-add-to-cart-ajax" data-book-id="<?php echo $book['id']; ?>" title="Thêm vào giỏ hàng">
-                                            <i class="fas fa-plus"></i>
-                                        </a>
-                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 align-items-center mt-2 w-100">
+                                    <a href="index.php?buy_now=<?php echo $book['id']; ?>" class="btn btn-sm btn-warning text-dark font-weight-600 flex-grow-1 text-center d-flex align-items-center justify-content-center" style="border-radius: 20px; font-size: 0.75rem; transition: var(--transition-smooth); white-space: nowrap; height: 40px;" title="Mua ngay">Mua ngay</a>
+                                    <a href="javascript:void(0);" class="btn-add-cart btn-add-to-cart-ajax" data-book-id="<?php echo $book['id']; ?>" title="Thêm vào giỏ hàng">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
                                 </div>
                             </div>
                         </div>
