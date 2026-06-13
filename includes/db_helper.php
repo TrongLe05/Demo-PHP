@@ -695,11 +695,6 @@ function delete_book($id) {
     return $bookRepo->delete((int)$id);
 }
 
-function get_users() {
-    global $userRepo;
-    return $userRepo->getAllUsers();
-}
-
 function get_user_by_email($email) {
     global $userRepo;
     return $userRepo->getByEmail($email);
