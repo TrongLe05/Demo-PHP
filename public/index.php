@@ -82,12 +82,6 @@ foreach ($books as $book) {
         }
     }
     
-    // Loại trừ sách nổi bật khỏi danh sách chính (chỉ khi không có tìm kiếm/lọc)
-    $is_featured = isset($book['featured']) && $book['featured'] == 1;
-    if ($search_query === '' && $category_filter === '' && $is_featured) {
-        continue;
-    }
-    
     if ($matches_search && $matches_category) {
         $filtered_books[] = $book;
     }
