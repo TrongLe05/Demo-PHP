@@ -262,17 +262,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <span class="text-muted text-nowrap"><i class="fas fa-filter text-warning"></i> Thể loại:</span>
                     <select name="category" class="form-select-custom w-100" onchange="this.form.submit()">
                         <option value="">Tất cả thể loại</option>
-                        <?php 
-                        // Lấy danh sách thể loại từ tất cả các sách trong CSDL để đảm bảo đầy đủ thể loại
-                        $temp_cats = [];
-                        $all_books_list = get_books();
-                        foreach ($all_books_list as $b) {
-                            if (!in_array($b['category'], $temp_cats)) {
-                                $temp_cats[] = $b['category'];
-                            }
-                        }
-                        foreach ($temp_cats as $cat): 
-                        ?>
+                        <?php foreach ($categories as $cat): ?>
                             <option value="<?php echo htmlspecialchars($cat); ?>" <?php echo ($category_filter === $cat) ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($cat); ?>
                             </option>
